@@ -8,6 +8,9 @@ TDewPoint = psychrolib.GetTDewPointFromRelHum(25.0, 0.80)
 print(TDewPoint)
 #read csv
 df = pd.read_csv('Book2.csv',header=None)
+#generate output excel
+excel_output = 'output_file.xlsx'
+df.to_excel(excel_output, index=False)
 #Assign columns
 columns_to_process_at = df.columns[2:11]  # Assuming 'C' is the third column (index 2)
 columns_to_process_lt = df.columns[12:17]  # Assuming 'M' is the 13th column (index 12)
