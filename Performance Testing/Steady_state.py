@@ -5,13 +5,13 @@ from helper_functions import U_config_or_not
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-import Steady_state as ss
 
+psychrolib.SetUnitSystem(psychrolib.SI)
+TDewPoint = psychrolib.GetTDewPointFromRelHum(25.0, 0.80)
+print(TDewPoint)
 #read csv
-first_usable_row = 24
-
 df = pd.read_csv('Book2.csv',header=None)
-df = df.iloc[first_usable_row:]
+df = df.iloc[24:]
 df.iloc[:, 2:] = df.iloc[:, 2:].apply(pd.to_numeric, errors='coerce')
 
 #Assign columns
@@ -19,8 +19,9 @@ columns_to_process_at = df.columns[2:11]  # Assuming 'C' is the third column (in
 columns_to_process_lt = df.columns[12:17]  # Assuming 'M' is the 13th column (index 12)
 columns_to_process_rh = df.columns[20:27]  # Assuming 'U' is the 21st column (index 20)
 columns_to_process_w = df.columns[28:35]  # Assuming 'AC' is the 29th column (index 28)
-#steady_state_line = 270
+steady_state_line = 270
 #variables
+
 process_airflow1 = 750
 process_airflow2 = 615
 regen_airflow = 395
@@ -60,6 +61,7 @@ for index, row in df.iterrows():
     df.at[index, 'TimeDifference'] = time_difference / 60
     
 df['Total_Power'] = Watt
+#df['U_Config'] = U_config_or_not(df.columns[13], df.columns[15])
 df['U_Config'] = df.apply(lambda row: U_config_or_not(row[df.columns[13]], row[df.columns[15]]), axis=1)
 df['Super_Heat'] = 0.0
 df['Sub_Cool'] = 0.0
@@ -122,44 +124,25 @@ for index, row in df.iterrows():
 
 df['W_supply'] = w_supply_list
 
-average_W_U_Inlet = df['W_U_Inlet'].mean()
-#average_W_U_Inlet = df.loc[steady_state_line:, 'W_U_Inlet'].mean()
-average_W_S_Inlet = df['W_S_Inlet'].mean()
-#average_W_S_Inlet = df.loc[steady_state_line:,'W_S_Inlet'].mean()
+df['Exhaust Humidity Delta (Standard)'] = np.where(df['U_Config'] == 1,
+                                                   df['W_exhaust'] - df['W_U_Inlet'],
+                                                   df['W_exhaust'] - df['W_S_Inlet'])
 
-average_ss_exhaust_humidity = ss.df['Exhaust Humidity Delta (Averaged Inlet)'].mean()
-average_ss_supply_humidity = ss.df['Supply Humidity Delta (Standard) [g/kg]'].mean()
-
+#average_W_U_Inlet = df['W_U_Inlet'].mean()
+average_W_U_Inlet = df.loc[steady_state_line:, 'W_U_Inlet'].mean()
+#average_W_S_Inlet = df['W_S_Inlet'].mean()
+average_W_S_Inlet = df.loc[steady_state_line:,'W_S_Inlet'].mean()
 # Use np.where to apply the condition and calculate the new column
-df['Exhaust Humidity Delta (Standard)'] = np.maximum(
-    np.where(df['U_Config'] == 1, df['W_exhaust'] - df['W_U_Inlet'], df['W_exhaust'] - df['W_S_Inlet']) - average_ss_exhaust_humidity,
-    0
-)
-
 df['Exhaust Humidity Delta (Averaged Inlet)'] = np.where(df['U_Config'] == 1,
                                                          df['W_exhaust'] - average_W_U_Inlet,
                                                          df['W_exhaust'] - average_W_S_Inlet)
 
-df['Exhaust Humidity Delta (Averaged Inlet)'] = np.maximum(
-    np.where(df['U_Config'] == 1, df['W_exhaust'] - average_W_U_Inlet, df['W_exhaust'] - average_W_S_Inlet) - average_ss_exhaust_humidity,
-    0
-)
 df['Supply Humidity Delta (Standard) [g/kg]'] = np.where(df['U_Config'] == 1,
                                                          df['W_U_Inlet'] - df['W_supply'],
                                                          df['W_S_Inlet'] - df['W_supply'])
-
-df['Supply Humidity Delta (Standard) [g/kg]'] = np.maximum(
-    np.where(df['U_Config'] == 1, df['W_U_Inlet'] - df['W_supply'], df['W_S_Inlet'] - df['W_supply']) - average_ss_supply_humidity,
-    0
-)
-
 df['Supply Humidity Delta (Averaged Inlet)'] = np.where(df['U_Config'] == 1,
                                                         average_W_U_Inlet - df['W_supply'],
                                                         average_W_S_Inlet - df['W_supply'])
-df['Supply Humidity Delta (Averaged Inlet)'] = np.maximum(
-    np.where(df['U_Config'] == 1, average_W_U_Inlet - df['W_supply'], average_W_S_Inlet - df['W_supply']) - average_ss_supply_humidity,
-    0
-)
 df['Process_airflow'] = np.where(df['U_Config'] == 1,
                                  process_airflow1,
                                  process_airflow2)
@@ -211,25 +194,20 @@ for index, row in df.iterrows():
 
 sd.to_excel('steady_state_processed_data.xlsx', index=False)
 
-#Generate the output file
-#generate output excel
-excel_output = 'output_file.xlsx'
-df.to_excel(excel_output, index=False)
-
 # Create a figure with subplots
 fig, axs = plt.subplots(2, 2, figsize=(15, 10))
-plt.suptitle('Switching Performance', fontsize=16, fontweight='bold')
+plt.suptitle('Steady State Performance', fontsize=16, fontweight='bold')
 
 # Plot 1
-axs[0, 0].plot(df['TimeDifference'], df['AT3'])
+axs[0, 0].plot(sd['TimeDifference'], sd['AT3'])
 axs[0, 0].set_xlabel('Time Difference (Minute)')
 axs[0, 0].set_ylabel('AT3')
 axs[0, 0].set_title('Plot of Time Difference vs AT3')
 axs[0, 0].grid(True)
 
 # Plot 2
-axs[0, 1].plot(df['TimeDifference'], df['Total_Power'], label='Total Power')
-axs[0, 1].plot(df['TimeDifference'], df['Average_Power_5min'], label='Average Power (5min)')
+axs[0, 1].plot(sd['TimeDifference'], sd['Total_Power'], label='Total Power')
+axs[0, 1].plot(sd['TimeDifference'], sd['Average_Power_5min'], label='Average Power (5min)')
 axs[0, 1].set_xlabel('Time Difference (Minute)')
 axs[0, 1].set_ylabel('Power')
 axs[0, 1].set_title('Plot of Time vs Power')
@@ -237,8 +215,8 @@ axs[0, 1].grid(True)
 axs[0, 1].legend()
 
 # Plot 3
-axs[1, 0].plot(df['TimeDifference'], df['Q_tot (Exhaust Latent) [BTU/hr]'], label='Total Cooling')
-axs[1, 0].plot(df['TimeDifference'], df['Average_Q_tot_5min'], label='Average Cooling (5min)')
+axs[1, 0].plot(sd['TimeDifference'], sd['Q_tot (Exhaust Latent) [BTU/hr]'], label='Total Cooling')
+axs[1, 0].plot(sd['TimeDifference'], sd['Average_Q_tot_5min'], label='Average Cooling (5min)')
 axs[1, 0].set_xlabel('Time Difference (Minute)')
 axs[1, 0].set_ylabel('Total Cooling')
 axs[1, 0].set_title('Plot of Time vs Total Cooling')
@@ -246,8 +224,8 @@ axs[1, 0].grid(True)
 axs[1, 0].legend()
 
 # Plot 4
-axs[1, 1].plot(df['TimeDifference'], df['EER (Exhaust Latent) [BTU/Wh]'], label='EER')
-axs[1, 1].plot(df['TimeDifference'], df['EER_5min'], label='EER (5min)')
+axs[1, 1].plot(sd['TimeDifference'], sd['EER (Exhaust Latent) [BTU/Wh]'], label='EER')
+axs[1, 1].plot(sd['TimeDifference'], sd['EER_5min'], label='EER (5min)')
 axs[1, 1].set_xlabel('Time Difference (Minute)')
 axs[1, 1].set_ylabel('EER')
 axs[1, 1].set_title('Plot of Time vs EER')
@@ -257,5 +235,13 @@ axs[1, 1].legend()
 # Adjust layout to prevent clipping of titles and labels
 plt.tight_layout()
 
+
+
+# Save the plot as an image file (choose the format you prefer)
+image_file_path = 'steady_state_performance_plot.png'
+plt.savefig(image_file_path, bbox_inches='tight')
 # Show the combined plot
 plt.show()
+
+# Print a message indicating where the image file is saved
+print(f"Plot saved as {image_file_path}")
