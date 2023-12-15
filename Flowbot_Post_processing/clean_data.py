@@ -54,6 +54,7 @@ for rows, count in patterns:
         avg_rows = result_df.iloc[start_index:start_index + rows].mean()
         averaged_df = pd.concat([averaged_df, avg_rows], axis=1, ignore_index=True)
         start_index += rows*count
+        
 """
 # Transpose the result to have rows as samples and columns as features
 averaged_df = averaged_df.T

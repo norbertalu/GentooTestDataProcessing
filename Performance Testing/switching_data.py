@@ -1,30 +1,30 @@
 import psychrolib
-import math
 import pandas as pd
 from helper_functions import U_config_or_not
-from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import Steady_state as ss
-
-#read csv
+psychrolib.SetUnitSystem(psychrolib.SI)
+#test Psychro
+TDewPoint = psychrolib.GetTDewPointFromRelHum(25.0, 0.80)
+print(TDewPoint)
+# Read CSV file and set the first usable row
 first_usable_row = 24
-
-df = pd.read_csv('Book2.csv',header=None)
+df = pd.read_csv('Performance Testing/Book2.csv',header=None)
 df = df.iloc[first_usable_row:]
 df.iloc[:, 2:] = df.iloc[:, 2:].apply(pd.to_numeric, errors='coerce')
 
-#Assign columns
+# Assign columns for different variables
 columns_to_process_at = df.columns[2:11]  # Assuming 'C' is the third column (index 2)
 columns_to_process_lt = df.columns[12:17]  # Assuming 'M' is the 13th column (index 12)
 columns_to_process_rh = df.columns[20:27]  # Assuming 'U' is the 21st column (index 20)
 columns_to_process_w = df.columns[28:35]  # Assuming 'AC' is the 29th column (index 28)
-#steady_state_line = 270
-#variables
+
+# Set variables
 process_airflow1 = 750
 process_airflow2 = 615
 regen_airflow = 395
-
+# Rename columns for clarity
 new_AT_column_names = {i: f'AT{i-1}' for i in range(2, 12)}
 df = df.rename(columns=new_AT_column_names)
 
@@ -51,7 +51,7 @@ df['valid_times'] = pd.to_datetime(df.iloc[:, 1], format='%H:%M:%S', errors='coe
 df['valid_times'] = df['valid_times'].dt.time  # Extract time part only
 
 start_time = df['valid_times'].dropna().iloc[0]
-#create a new column
+# Create a new column for time differences
 df['TimeDifference'] = 0.0
 # Iterate over each row and calculate the time difference
 for index, row in df.iterrows():
@@ -191,6 +191,12 @@ df['Average_Power_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Total_Po
 df['Average_Q_tot_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_tot (Exhaust Latent) [BTU/hr]'].transform('mean')
 df['EER_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['EER (Exhaust Latent) [BTU/Wh]'].transform('mean')
 df['Q_lat_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_lat_Exhaust [BTU/hr]'].transform('mean')
+window_size = 5
+# Calculate the moving average for 'Total_Power'
+df['Average_Power_5min'] = df['Total_Power'].rolling(window=window_size).mean()
+df['Average_Q_tot_5min'] = df['Q_tot (Exhaust Latent) [BTU/hr]'].rolling(window=window_size).mean()
+df['EER_5min'] = df['EER (Exhaust Latent) [BTU/Wh]'].rolling(window=window_size).mean()
+df['Q_lat_5min'] = df['Q_lat_Exhaust [BTU/hr]'].rolling(window=window_size).mean()
 
 ###################
 sd = df.loc[270:].copy()
@@ -261,7 +267,7 @@ plt.tight_layout()
 
 
 # Save the plot as an image file (choose the format you prefer)
-image_file_path = 'switching_performance_plot.png'
+image_file_path = 'Performance Testing/switching_performance_plot.png'
 plt.savefig(image_file_path, bbox_inches='tight')
 plt.show()
 

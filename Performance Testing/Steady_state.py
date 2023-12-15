@@ -1,16 +1,11 @@
 import psychrolib
-import math
 import pandas as pd
 from helper_functions import U_config_or_not
-from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-
 psychrolib.SetUnitSystem(psychrolib.SI)
-TDewPoint = psychrolib.GetTDewPointFromRelHum(25.0, 0.80)
-print(TDewPoint)
 #read csv
-df = pd.read_csv('Book2.csv',header=None)
+df = pd.read_csv('Performance Testing/Book2.csv',header=None)
 df = df.iloc[24:]
 df.iloc[:, 2:] = df.iloc[:, 2:].apply(pd.to_numeric, errors='coerce')
 
@@ -170,11 +165,12 @@ df['Q_tot (Supply Latent) [BTU/hr]'] = df['Q_sens [BTU/hr]'] + df['Q_lat_Supply 
 df['EER (Exhaust Latent) [BTU/Wh]'] = df['Q_tot (Exhaust Latent) [BTU/hr]']/df['Total_Power']
 df['EER (Supply Latent) [BTU/Wh]'] = df['Q_tot (Supply Latent) [BTU/hr]']/df['Total_Power']
 
-df['Average_Power_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Total_Power'].transform('mean')
-df['Average_Q_tot_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_tot (Exhaust Latent) [BTU/hr]'].transform('mean')
-df['EER_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['EER (Exhaust Latent) [BTU/Wh]'].transform('mean')
-df['Q_lat_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_lat_Exhaust [BTU/hr]'].transform('mean')
-
+window_size = 5
+# Calculate the moving average for 'Total_Power'
+df['Average_Power_5min'] = df['Total_Power'].rolling(window=window_size).mean()
+df['Average_Q_tot_5min'] = df['Q_tot (Exhaust Latent) [BTU/hr]'].rolling(window=window_size).mean()
+df['EER_5min'] = df['EER (Exhaust Latent) [BTU/Wh]'].rolling(window=window_size).mean()
+df['Q_lat_5min'] = df['Q_lat_Exhaust [BTU/hr]'].rolling(window=window_size).mean()
 ###################
 sd = df.loc[270:].copy()
 
@@ -192,7 +188,7 @@ for index, row in df.iterrows():
 
 # Save the separated data to a new Excel file
 
-sd.to_excel('steady_state_processed_data.xlsx', index=False)
+sd.to_excel('Performance Testing/steady_state_processed_data.xlsx', index=False)
 
 # Create a figure with subplots
 fig, axs = plt.subplots(2, 2, figsize=(15, 10))
@@ -238,7 +234,7 @@ plt.tight_layout()
 
 
 # Save the plot as an image file (choose the format you prefer)
-image_file_path = 'steady_state_performance_plot.png'
+image_file_path = 'Performance Testing/steady_state_performance_plot.png'
 plt.savefig(image_file_path, bbox_inches='tight')
 # Show the combined plot
 plt.show()
