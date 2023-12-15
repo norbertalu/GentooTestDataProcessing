@@ -215,11 +215,11 @@ for index, row in df.iterrows():
 
 # Save the separated data to a new Excel file
 
-sd.to_excel('steady_state_processed_data.xlsx', index=False)
+sd.to_excel('Performance Testing/steady_state_processed_data.xlsx', index=False)
 
 #Generate the output file
 #generate output excel
-excel_output = 'output_file.xlsx'
+excel_output = 'Performance Testing/Switching Data.xlsx'
 df.to_excel(excel_output, index=False)
 
 # Create a figure with subplots
