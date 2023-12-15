@@ -1,4 +1,4 @@
-# HVACTestAutomation
+# Transaera Test Data Processing
 Switching Performance Code
 
 This Python script processes and analyzes performance testing data from a CSV file. It performs various calculations and generates plots to visualize switching performance. The script uses external helper functions and Steady_state module for additional processing.
