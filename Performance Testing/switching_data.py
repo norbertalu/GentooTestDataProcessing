@@ -10,7 +10,7 @@ TDewPoint = psychrolib.GetTDewPointFromRelHum(25.0, 0.80)
 print(TDewPoint)
 # Read CSV file and set the first usable row
 first_usable_row = 24
-df = pd.read_csv('Performance Testing/Book2.csv',header=None)
+df = pd.read_csv('Performance Testing/Input csv/Book2.csv',header=None)
 df = df.iloc[first_usable_row:]
 df.iloc[:, 2:] = df.iloc[:, 2:].apply(pd.to_numeric, errors='coerce')
 
@@ -44,6 +44,7 @@ df = df.rename(columns=new_column_names_w)
 
 KWh = df[df.columns[36]]
 Watt = df[df.columns[37]]
+df.rename(columns={df.columns[36]: 'kWh', df.columns[37]: 'Watt'}, inplace=True)
 
 df = df.iloc[1:]
 
