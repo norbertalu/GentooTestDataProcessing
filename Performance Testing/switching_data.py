@@ -64,6 +64,9 @@ df['Total_Power'] = Watt
 df['U_Config'] = df.apply(lambda row: U_config_or_not(row[df.columns[13]], row[df.columns[15]]), axis=1)
 df['Super_Heat'] = 0.0
 df['Sub_Cool'] = 0.0
+df['Compressor Power'] = 250
+df['Fan Power'] = 143
+df['Standby_power'] = 0
 
 temp_df = df.copy()
 supply_temp = temp_df.columns[5:11]
@@ -188,17 +191,27 @@ df['Q_tot (Supply Latent) [BTU/hr]'] = df['Q_sens [BTU/hr]'] + df['Q_lat_Supply 
 df['EER (Exhaust Latent) [BTU/Wh]'] = df['Q_tot (Exhaust Latent) [BTU/hr]']/df['Total_Power']
 df['EER (Supply Latent) [BTU/Wh]'] = df['Q_tot (Supply Latent) [BTU/hr]']/df['Total_Power']
 
+df['Capacity'] = df['Q_sens [BTU/hr]']+ df['Q_lat_Exhaust [BTU/hr]']
+df['COP'] = df['Capacity']/(df['Compressor Power']+df['Fan Power'])
+
+df['CEER']=df['Capacity']/(df['Total_Power']+ df['Standby_power'])
+
+
 df['Average_Power_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Total_Power'].transform('mean')
 df['Average_Q_tot_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_tot (Exhaust Latent) [BTU/hr]'].transform('mean')
 df['EER_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['EER (Exhaust Latent) [BTU/Wh]'].transform('mean')
 df['Q_lat_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_lat_Exhaust [BTU/hr]'].transform('mean')
+
 window_size = 5
 # Calculate the moving average for 'Total_Power'
 df['Average_Power_5min'] = df['Total_Power'].rolling(window=window_size).mean()
 df['Average_Q_tot_5min'] = df['Q_tot (Exhaust Latent) [BTU/hr]'].rolling(window=window_size).mean()
 df['EER_5min'] = df['EER (Exhaust Latent) [BTU/Wh]'].rolling(window=window_size).mean()
 df['Q_lat_5min'] = df['Q_lat_Exhaust [BTU/hr]'].rolling(window=window_size).mean()
-
+df['Q_sens_5min']=df['Q_sens [BTU/hr]'].rolling(window=window_size).mean()
+df['Capacity_5min']=df['Capacity'].rolling(window=window_size).mean()
+df['COP_5min']=df['COP'].rolling(window=window_size).mean()
+df['CEER_5min']=df['CEER'].rolling(window=window_size).mean()
 ###################
 sd = df.loc[270:].copy()
 
@@ -223,9 +236,10 @@ sd.to_excel('Performance Testing/steady_state_processed_data.xlsx', index=False)
 excel_output = 'Performance Testing/Switching Data.xlsx'
 df.to_excel(excel_output, index=False)
 
-# Create a figure with subplots
-fig, axs = plt.subplots(2, 2, figsize=(15, 10))
-plt.suptitle('Switching Performance', fontsize=16, fontweight='bold')
+# Create a figure with subplots (3 rows, 2 columns)
+fig, axs = plt.subplots(4, 2, figsize=(20, 25))  # Adjusted for 4x2 grid
+plt.suptitle('Switching Performance', fontsize=20, fontweight='bold')
+
 
 # Plot 1
 axs[0, 0].plot(df['TimeDifference'], df['AT3'])
@@ -261,11 +275,37 @@ axs[1, 1].set_title('Plot of Time vs EER')
 axs[1, 1].grid(True)
 axs[1, 1].legend()
 
+# Plot 5
+axs[2, 0].plot(df['TimeDifference'], df['Q_lat_Exhaust [BTU/hr]'], label='Latent Capacity')
+axs[2, 0].plot(df['TimeDifference'], df['Q_lat_5min'], label='Latent Capacity (5min)')
+axs[2, 0].set_xlabel('Time Difference (Minute)')
+axs[2, 0].set_ylabel('Latent Capacity')
+axs[2, 0].set_title('Plot of Time vs Latent Capacity')
+axs[2, 0].grid(True)
+axs[2, 0].legend()
+
+
+# Plot 6
+axs[2, 1].plot(df['TimeDifference'], df['Q_sens [BTU/hr]'], label='Sensible Capacity')
+axs[2, 1].plot(df['TimeDifference'], df['Q_sens_5min'], label='Sensible Capacity (5min)')
+axs[2, 1].set_xlabel('Time Difference (Minute)')
+axs[2, 1].set_ylabel('Sensible Capacity')
+axs[2, 1].set_title('Plot of Time vs Sensible Capacity')
+axs[2, 1].grid(True)
+axs[2, 1].legend()
+
+# Plot 7
+axs[3, 0].plot(df['TimeDifference'], df['Capacity'], label='Capacity')
+axs[3, 0].plot(df['TimeDifference'], df['Capacity_5min'], label='Capacity (5min)')
+axs[3, 0].set_xlabel('Time Difference (Minute)')
+axs[3, 0].set_ylabel('Capacity')
+axs[3, 0].set_title('Plot of Time vs Capacity')
+axs[3, 0].grid(True)
+axs[3, 0].legend()
+
 # Adjust layout to prevent clipping of titles and labels
 plt.tight_layout()
-
-# Show the combined plot
-
+plt.subplots_adjust(hspace=0.4, wspace=0.1)  # Adjust these values as needed
 
 # Save the plot as an image file (choose the format you prefer)
 image_file_path = 'Performance Testing/switching_performance_plot.png'
