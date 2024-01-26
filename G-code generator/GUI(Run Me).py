@@ -27,9 +27,14 @@ def generate_gcode():
         # Generate G-code
         gcode = generate_swirl_path(width, height, loops, speed, initial_height)
 
-        # Use the selected output path
+        # Use the selected output path and entered filename
         output_path = output_path_var.get()
-        filename = 'gcode_output.gcode'
+        filename = filename_entry.get().strip()
+        if not filename:
+            filename = "gcode_output.gcode"
+        else:
+            if not filename.endswith('.gcode'):
+                filename += '.gcode'
         full_path = os.path.join(output_path, filename)
 
         # Write the G-code to a file
@@ -43,6 +48,7 @@ def generate_gcode():
         messagebox.showerror("Error", f"Invalid input: {e}")
     except Exception as e:
         messagebox.showerror("Error", f"An unexpected error occurred: {e}")
+
 # Create the main window
 root = tk.Tk()
 root.title("Transaera G-code Generator")
@@ -75,9 +81,16 @@ tk.Button(root, text="Select Output Path", command=select_output_path).grid(row=
 output_path_label = tk.Label(root, textvariable=output_path_var)
 output_path_label.grid(row=5, column=1,sticky='ew')
 
+tk.Label(root, text="Filename:").grid(row=6, column=0)
+filename_entry = tk.Entry(root)
+filename_entry.grid(row=6, column=1)
+
 # Create and place the generate button
 generate_button = tk.Button(root, text="Generate G-code", command=generate_gcode)
 generate_button.grid(row=6, column=0, columnspan=2,sticky='ew')
+generate_button.grid(row=7, column=0, columnspan=2, sticky='ew')
+
+
 
 # Start the GUI event loop
 root.mainloop()
