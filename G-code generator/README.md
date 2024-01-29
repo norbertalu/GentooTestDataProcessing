@@ -17,7 +17,7 @@ Navigate to the project directory.
 
 Running the Application
 To run the application, execute the GUI_Run_Me.py script:
-# python GUI_Run_Me.py
+python GUI_Run_Me.py
 This will open the GUI, where you can input parameters for the G-code generation.
 
 Using the GUI
@@ -28,6 +28,7 @@ Initial Height (mm): Enter the initial height from the bottom in millimeters.
 Select Output Path: Click this button to choose the directory where the G-code file will be saved.
 Filename: Enter a name for the G-code file. If left blank, a default name will be used.
 Generate G-code: Click this button to generate the G-code file with the specified parameters. A success message will confirm the file creation.
+
 G-Code Logic
 The core logic for G-code generation is housed in gcode.py. This module includes functions to calculate the swirl pattern based on the given parameters and ensures that the generated paths are within the specified workspace limits.
 
