@@ -17,9 +17,9 @@ def move_to(x, y, feed_rate):
 
 def generate_swirl_path(width, height, loops, speed,initial_height):
     gcode = []
-    gcode.append("G4 P30 ; Pause for 30 seconds for tool loading")
 
     gcode.append(f"G0 F1000 X{initial_height:.4f} Y0.0000")
+    gcode.append("G4 P30 ; Pause for 30 seconds for tool loading")
 
     step_x = height / (loops)
     current_x = initial_height
