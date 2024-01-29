@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 psychrolib.SetUnitSystem(psychrolib.SI)
 #read csv
-df = pd.read_csv('Performance Testing/Book2.csv',header=None)
+df = pd.read_csv('Performance Testing/Input csv/Book2.csv',header=None)
 df = df.iloc[24:]
 df.iloc[:, 2:] = df.iloc[:, 2:].apply(pd.to_numeric, errors='coerce')
 
