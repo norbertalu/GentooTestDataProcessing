@@ -24,15 +24,22 @@ This will open the GUI, where you can input parameters for the G-code generation
 
 Using the GUI
 Width (mm): Enter the width of the workspace in millimeters.
+
 Height (mm): Enter the height of the workspace in millimeters.
+
 Number of paths: Enter the number of paths for the swirl pattern.
+
 Initial Height (mm): Enter the initial height from the bottom in millimeters.
+
 Select Output Path: Click this button to choose the directory where the G-code file will be saved.
+
 Filename: Enter a name for the G-code file. If left blank, a default name will be used.
+
 Generate G-code: Click this button to generate the G-code file with the specified parameters. A success message will confirm the file creation.
 
 G-Code Logic
-The core logic for G-code generation is housed in gcode.py. This module includes functions to calculate the swirl pattern based on the given parameters and ensures that the generated paths are within the specified workspace limits.
+The core logic for G-code generation is housed in gcode.py. 
+This module includes functions to calculate the swirl pattern based on the given parameters and ensures that the generated paths are within the specified workspace limits.
 
 Contributions
 Contributions to this project are welcome. Please ensure that any pull requests or issues are clearly described to facilitate effective collaboration.
