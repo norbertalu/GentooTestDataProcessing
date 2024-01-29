@@ -1,6 +1,8 @@
 # Transaera G-Code Generator Project
 Overview
-This project consists of a Python application designed to generate G-code for CNC machines, specifically tailored for creating swirl patterns. The project is divided into two main components:
+This project consists of a Python application designed to generate G-code for CNC machines, specifically tailored for creating swirl patterns. 
+
+The project is divided into two main components:
 
 gcode.py: Contains the core logic for G-code generation.
 GUI_Run_Me.py: A graphical user interface (GUI) built with Tkinter, allowing users to input parameters and generate G-code files interactively.
