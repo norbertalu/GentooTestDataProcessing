@@ -4,18 +4,20 @@ This project consists of a Python application designed to generate G-code for CN
 
 gcode.py: Contains the core logic for G-code generation.
 GUI_Run_Me.py: A graphical user interface (GUI) built with Tkinter, allowing users to input parameters and generate G-code files interactively.
+
 Requirements
 Python 3.x
 Tkinter (usually comes pre-installed with Python)
 Optional: PyAutoGUI for automated GUI testing (not required for standard usage)
+
 Installation
 Ensure Python 3.x is installed on your system.
 Clone or download this repository to your local machine.
 Navigate to the project directory.
+
 Running the Application
 To run the application, execute the GUI_Run_Me.py script:
-
-python GUI_Run_Me.py
+# python GUI_Run_Me.py
 This will open the GUI, where you can input parameters for the G-code generation.
 
 Using the GUI
