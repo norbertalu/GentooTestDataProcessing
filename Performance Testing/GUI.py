@@ -6,8 +6,8 @@ root.title("Airflow Calculation Tool")
 
 # Dictionary of prototypes
 prototypes = {
-    "Prototype1": (0.8, 165),
-    "Prototype2": (0.9, 150),
+    "Gentoo P1": (0.8, 165),
+    "Gentoo P3": (0.9, 150),
     # ... add more prototypes as needed
 }
 
@@ -48,15 +48,22 @@ regen_prototype_dropdown = ttk.Combobox(root, textvariable=regen_prototype_var, 
 regen_prototype_dropdown.grid(row=3, column=1)
 regen_prototype_dropdown.current(0)  # Default selection
 tk.Label(root, text="Prototype:").grid(row=3, column=0)
+# ambient pressure
+tk.Label(root, text="Ambient Pressure (Pa):").grid(row=4, column=0)
+ambient_pressure_entry = tk.Entry(root)
+ambient_pressure_entry.grid(row=4, column=1)
+ambient_pressure_entry.insert(0, "101325")  # Default value for standard atmospheric pressure
+
 
 def on_calculate_clicked():
     # Implement the logic to read data, perform calculations, and save output
     # This should include reading the input file, applying the calculate_airflow function
     # and writing the results to the output file in the selected output folder
+    ambient_pressure = float(ambient_pressure_entry.get())
     messagebox.showinfo("Info", "Calculation completed.")
 
 # Calculate button
-calculate_button = tk.Button(root, text="Calculate Airflow", command=on_calculate_clicked)
+calculate_button = tk.Button(root, text="Get resule", command=on_calculate_clicked)
 calculate_button.grid(row=5, column=1)
 
 root.mainloop()

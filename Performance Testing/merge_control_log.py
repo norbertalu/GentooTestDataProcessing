@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Constants
-TIME_THRESHOLD_SECONDS = 5
+TIME_THRESHOLD_SECONDS = 10
 INPUT_PATH = 'Performance Testing/Input csv/'
 OUTPUT_PATH = 'Performance Testing/Output excel files/'
 
@@ -71,6 +71,8 @@ def merge_dataframes(df1, df2, time_threshold):
 
 # Perform the merge
 df = merge_dataframes(df, new_df, TIME_THRESHOLD_SECONDS)
+
+
 
 # Save the merged dataframe to a new Excel file
 output_file = OUTPUT_PATH + 'new.xlsx'
