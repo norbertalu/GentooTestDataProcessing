@@ -124,7 +124,7 @@ temp_df = df.copy()
 supply_temp = temp_df.columns[5:11]
 
 df['T_supply'] = temp_df[supply_temp].mean(axis=1)
-print(df['T_supply'] )
+#print(df['T_supply'] )
 df['T_return'] = np.where(df['Left_Right'] == 1, df.iloc[:, 4], df.iloc[:, 2])
 
 df['dT[C]'] = df['T_return'] - df['T_supply']

@@ -80,26 +80,51 @@ class Application(tk.Tk):
         control_log_input_file = self.control_log_input_file_entry.get()
         output_folder = self.output_folder_entry.get()
         ambient_pressure = float(self.ambient_pressure_entry.get())
-        
+    
         # Preparing and analyzing data
         df = self.prepare_dataframe(input_file)
-        
-        # Perform additional calculations
-        self.perform_calculations(df, ambient_pressure)
+        new_df = self.prepare_dataframe(control_log_input_file)
+
+        rename_columns = {
+            new_df.columns[i]: name for i, name in enumerate([
+            'Superheat', 'Subcool', 'Num_Cycles', 'Compressor_En', 'Compressor',
+            'Fan_En', 'Process_Fan', 'Regen_Fan', 'EEV', 'Left_Right', 
+            'Cooling_Heating', 'Automode_En'], start=24)  # Ensure this starts at the correct index
+        }
+        new_df = new_df.rename(columns=rename_columns)
+
+        # Ensure columns_to_merge is correctly populated
+        columns_to_merge = list(rename_columns.values())
+        new_df[columns_to_merge] = new_df[columns_to_merge].apply(pd.to_numeric, errors='coerce')
+
+        # Pass columns_to_merge as an argument
+        df = self.merge_dataframes(df, new_df, TIME_THRESHOLD_SECONDS, columns_to_merge)
+        df = df.iloc[1:, :] 
+
+        # Perform additional calculations if necessary
 
         # Save results to output folder
         output_file_path = f"{output_folder}/calculated_results.xlsx"
         df.to_excel(output_file_path, index=False)
         messagebox.showinfo("Info", "Calculation completed and results saved.")
 
-    def prepare_and_analyze_data(self, file_path, ambient_pressure):
-        # Placeholder for data preparation and analysis logic
-        # Use psychrolib and pandas as needed for your calculations
-        # Example: Read CSV, perform calculations, and return the DataFrame
-        df = pd.read_csv(file_path)  # Simplified example
-        # Perform calculations here using ambient_pressure, psychrolib, etc.
-        return df  # This should be your calculated DataFrame
+    def merge_dataframes(self, df1, df2, time_threshold, columns_to_merge):
 
+        for index, row in df1.iterrows():
+            # Calculate time difference in seconds
+            time_difference = (df2['valid_times'].apply(lambda x: x.hour * 3600 + x.minute * 60 + x.second) -
+                            row['valid_times'].hour * 3600 -
+                            row['valid_times'].minute * 60 -
+                            row['valid_times'].second)
+    
+            close_rows = df2[abs(time_difference) <= time_threshold]
+    
+            if not close_rows.empty:
+                selected_columns = close_rows[columns_to_merge]
+                for col in columns_to_merge:
+                    df1.at[index, col] = selected_columns.iloc[0][col]
+
+        return df1
 
     def perform_calculations(self, df, ambient_pressure):
         # Example: Calculate 'dT[C]'
@@ -117,5 +142,6 @@ class Application(tk.Tk):
 
 if __name__ == "__main__":
     psychrolib.SetUnitSystem(psychrolib.SI)
+    TIME_THRESHOLD_SECONDS = 10
     app = Application()
     app.mainloop()
