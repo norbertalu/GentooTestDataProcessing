@@ -4,6 +4,7 @@ from helper_functions import U_config_or_not
 import numpy as np
 import matplotlib.pyplot as plt
 #import Steady_state as ss
+#do not need to compare
 # Constants
 TIME_THRESHOLD_SECONDS = 10
 INPUT_PATH = 'Performance Testing/Input csv/'

@@ -22,32 +22,30 @@ def generate_swirl_path_vertical(width, height, loops, speed,initial_height):
     gcode.append("G4 P30 ; Pause for 30 seconds for tool loading")
 
 
-    step_y = width / (loops)  # Use width to determine step size for Y, since we're rotating the path
+    # Adjust step_y to ensure full coverage across the width
+    step_y = width / (loops - 1)  # Adjusted to account for spaces between loops
+    
     current_x = initial_height
     current_y = 0
     move_up = True
 
-    first_iteration = True
-
+    # Loop through each swirl
     for i in range(loops):
-        # Move horizontally (left or right)
-        if not first_iteration:
+        # Move vertically (up or down)
+        if i > 0:  # Skip the first iteration for vertical movement to start correctly
             current_y += step_y
-            gcode.extend(move_to(current_x, current_y, speed))
-        
-        if first_iteration:
+            # Ensure current_y does not exceed the width boundary
+            current_y = min(current_y, width)
             gcode.extend(move_to(current_x, current_y, speed))
 
-        # If moving up, go all the way to the maximum X value (since we've rotated the path)
+        # Alternate between moving up and down
         if move_up:
-            current_x = height  # Use height here because of the 90-degree rotation
-            gcode.extend(move_to(current_x, current_y, speed))
+            current_x = height  # Moving up
             move_up = False
         else:
-            current_x = initial_height
-            gcode.extend(move_to(current_x, current_y, speed))
+            current_x = initial_height  # Moving down
             move_up = True
-        first_iteration = False
+        gcode.extend(move_to(current_x, current_y, speed))
 
     return gcode
 
@@ -85,9 +83,9 @@ def main(width, height, speed, loops,initial_height ):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    width = 300
-    height = 420
+    width = 290
+    height = 635
     speed = 250
-    loops = 10
-    Height_start_point = 30
+    loops = 7
+    Height_start_point = 70
     main(width, height, speed, loops, Height_start_point)  # Example parameters
