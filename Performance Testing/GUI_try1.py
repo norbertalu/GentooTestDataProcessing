@@ -35,12 +35,14 @@ class Application(tk.Tk):
         self.output_folder_entry = tk.Entry(self, width=50)
         self.output_folder_entry.grid(row=2, column=1)
         tk.Button(self, text="Browse", command=self.select_output_folder).grid(row=2, column=2)
-        
+
         # Prototype Selection
         tk.Label(self, text="Prototype:").grid(row=3, column=0)
         self.prototype_var = tk.StringVar()
-        self.prototype_dropdown = ttk.Combobox(self, textvariable=self.prototype_var, values=list(self.prototypes.keys()))
+        self.prototype_dropdown = ttk.Combobox(self, textvariable=self.prototype_var)
         self.prototype_dropdown.grid(row=3, column=1)
+        # Assuming self.prototypes is defined elsewhere
+        self.prototype_dropdown['values'] = list(self.prototypes.keys())  
         self.prototype_dropdown.current(0)  # Default to first prototype
         
         # Ambient Pressure Entry
@@ -49,8 +51,30 @@ class Application(tk.Tk):
         self.ambient_pressure_entry.grid(row=4, column=1)
         self.ambient_pressure_entry.insert(0, "101325")  # Default value
         
-        # Calculate Button
-        tk.Button(self, text="Calculate", command=self.on_calculate_clicked).grid(row=5, column=1)
+        # Saved File Name Entry
+        tk.Label(self, text="Saved File Name:").grid(row=5, column=0)
+        self.saved_file_name_entry  = tk.Entry(self, width=50)
+        self.saved_file_name_entry.grid(row=5, column=1)
+        self.saved_file_name_entry.insert(0, "")  # Default file name
+
+        # RH Sensor Table
+        self.rh_station_positions = ["Process Outlet", "Process Inlet"]  # Add more positions as needed
+        self.rh_sensor_names = [f"RH{i}" for i in range(1, 9)]  # RH1 to RH8
+
+        # Create Labels and Dropdowns for each station position
+        self.rh_selection_widgets = []
+        for i, position in enumerate(self.rh_station_positions, start=6):  # Adjust start index as needed
+            tk.Label(self, text=position).grid(row=i, column=0)
+            rh_var = tk.StringVar()
+            rh_dropdown = ttk.Combobox(self, textvariable=rh_var, values=self.rh_sensor_names)
+            rh_dropdown.grid(row=i, column=1)
+            # Set default values for the first two positions
+            rh_dropdown.current(0 if i == 6 else 1 if i == 7 else 0)
+            self.rh_selection_widgets.append((position, rh_var))
+
+        # Calculate Button - Adjusted to be at the bottom
+        tk.Button(self, text="Calculate", command=self.on_calculate_clicked).grid(row=8, column=1)  # Adjust row as needed based on your layout
+
 
     def prepare_dataframe(self, file_path, time_format='%H:%M:%S', num_cols=None):
         """Prepares and cleans the dataframe from the given file."""
@@ -81,6 +105,13 @@ class Application(tk.Tk):
         output_folder = self.output_folder_entry.get()
         ambient_pressure = float(self.ambient_pressure_entry.get())
     
+        saved_file_name = self.saved_file_name_entry.get().strip()
+        # Ensure the file name ends with .xlsx
+        if not saved_file_name.endswith('.xlsx'):
+            saved_file_name += '.xlsx'
+        output_file_path = f"{output_folder}/{saved_file_name}"
+
+    
         # Preparing and analyzing data
         df = self.prepare_dataframe(input_file)
         new_df = self.prepare_dataframe(control_log_input_file)
@@ -104,7 +135,6 @@ class Application(tk.Tk):
         # Perform additional calculations if necessary
 
         # Save results to output folder
-        output_file_path = f"{output_folder}/calculated_results.xlsx"
         df.to_excel(output_file_path, index=False)
         messagebox.showinfo("Info", "Calculation completed and results saved.")
 
