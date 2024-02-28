@@ -156,7 +156,6 @@ class Application(tk.Tk):
         # apply airflow
         #df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(self.calculate_airflow(fan_speed=100,coefficient=0.8, intercept=5))
         df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, coefficient=0.8, intercept=5))
-        
         df['Process_Fan_Airflow_U'] = df['Process_Fan'].apply(self.calculate_airflow)
         df['Process_Fan_Airflow_S'] = df['Process_Fan'].apply(self.calculate_airflow)
         temp_df = df.copy()
@@ -164,6 +163,77 @@ class Application(tk.Tk):
         df['T_supply'] = temp_df[supply_temp].mean(axis=1)
         df['T_return'] = np.where(df['Left_Right'] == 1, df['AT3'], df['AT1'])
         df['dT[C]'] = df['T_return'] - df['T_supply']
+
+        w_u_inlet_values = []
+        message_printed_w_u = False  # Flag to track if the message has been printed
+        for index, row in df.iterrows():
+            TDryBulb = row['AT3']
+            if row['RH1'] == 0 or row['RH1'] > 100:
+                RelHum = row['RH4'] / 100
+                if not message_printed_w_u:
+                    print("Original RH1 is malfunctioning, so the system automatically uses RH4.")
+                    message_printed_w_u = True
+            else:
+                RelHum = row['RH1'] / 100
+
+            w_u_inlet = psychrolib.GetHumRatioFromRelHum(TDryBulb, RelHum, ambient_pressure)*1000
+            w_u_inlet_values.append(w_u_inlet)
+
+        # Assign the list of calculated values to the 'HR_U_Inlet' column
+        df['W_U_Inlet'] = w_u_inlet_values
+
+        w_s_inlet_values = []
+        message_printed_w_s = False  # Flag to track if the message has been printed
+        for index, row in df.iterrows():
+            TDryBulb = row['AT1']
+            if row['RH2'] == 0 or row['RH2'] > 100:
+                RelHum = row['RH5'] / 100
+                if not message_printed_w_s:
+                    print("Original RH2 is malfunctioning, so the system automatically uses RH5.")
+                    message_printed_w_s = True
+            else:
+                RelHum = row['RH2'] / 100
+            w_s_inlet = psychrolib.GetHumRatioFromRelHum(TDryBulb, RelHum, ambient_pressure)*1000
+            w_s_inlet_values.append(w_s_inlet)
+
+        # Assign the list of calculated values to the 'HR_U_Inlet' column
+        df['W_S_Inlet'] = w_s_inlet_values
+
+        w_exhaust_list = [] 
+        message_printed_w_exhaust = False  # Flag to track if the message has been printed
+        for index, row in df.iterrows():
+            TDryBulb = row['AT2']
+            if row['RH3'] == 0 or row['RH3'] > 100:
+                RelHum = row['RH6'] / 100
+                if not message_printed_w_exhaust:
+                    print("Original RH3 is malfunctioning, so the system automatically uses RH6.")
+                    message_printed_w_exhaust = True
+            else:
+                RelHum = row['RH3'] / 100
+            w_exhaust = psychrolib.GetHumRatioFromRelHum(TDryBulb, RelHum, ambient_pressure) * 1000
+            w_exhaust_list.append(w_exhaust)  # Append to the list
+
+        df['W_exhaust'] = w_exhaust_list
+        RH_average = temp_df.columns[23:25]
+        df['RH_avg'] = temp_df[RH_average].mean(axis=1)
+
+        w_supply_list = [] 
+
+        for index, row in df.iterrows():
+            TDryBulb = row['T_supply']  # Use the 'T_supply' column
+            RelHum = row['RH_avg'] / 100  # Use the calculated 'RH_avg' column
+            w_supply = psychrolib.GetHumRatioFromRelHum(TDryBulb, RelHum, ambient_pressure) * 1000
+            w_supply_list.append(w_supply)  # Append to the list
+
+        df['W_supply'] = w_supply_list
+
+        average_W_U_Inlet = df['W_U_Inlet'].mean()
+        average_W_S_Inlet = df['W_S_Inlet'].mean()
+        
+
+
+
+
 
         # Save results to output folder
         df.to_excel(output_file_path, index=False)
