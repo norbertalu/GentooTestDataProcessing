@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import numpy as np
 import psychrolib
+import matplotlib as plt
 
 # Setting the unit system for psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
@@ -73,8 +74,23 @@ class Application(tk.Tk):
             rh_dropdown.current(0 if i == 6 else 1 if i == 7 else 0)
             self.rh_selection_widgets.append((position, rh_var))
 
-        # Calculate Button - Adjusted to be at the bottom
-        tk.Button(self, text="Calculate", command=self.on_calculate_clicked).grid(row=8, column=1)  # Adjust row as needed based on your layout
+        tk.Label(self, text="Select Plots:").grid(row=9, column=0, sticky='w')
+        self.plot_selection_listbox = tk.Listbox(self, selectmode='multiple', height=10)
+        self.plot_selection_listbox.grid(row=9, column=1, columnspan=2, sticky='ew')
+    
+        # Populate the Listbox with plot options
+        plot_options = ["Plot of Time Difference vs AT3", "Plot of Time vs Power", 
+                    "Plot of Time vs Total Cooling", "Plot of Time vs EER", 
+                    "Plot of Time vs Latent Capacity", "Plot of Time vs Sensible Capacity", 
+                    "Plot of Time vs Capacity"]
+        for option in plot_options:
+            self.plot_selection_listbox.insert(tk.END, option)
+    
+        # Adjust the Calculate button row
+        tk.Button(self, text="Calculate", command=self.on_calculate_clicked).grid(row=10, column=1)
+
+        # Add a Plot button
+        tk.Button(self, text="Generate Plots", command=self.generate_selected_plots).grid(row=11, column=1)
 
 
     def prepare_dataframe(self, file_path, time_format='%H:%M:%S', num_cols=None):
@@ -314,20 +330,42 @@ class Application(tk.Tk):
                     df1.at[index, col] = selected_columns.iloc[0][col]
 
         return df1
+    
+    def generate_selected_plots(self):
+        selected_indices = self.plot_selection_listbox.curselection()
+        selected_plots = [self.plot_selection_listbox.get(i) for i in selected_indices]
+    
+        # Load or prepare your DataFrame here, for example:
+        df = self.prepare_plotting_dataframe()
+    
+        # Create a figure for the plots
+        fig, axs = plt.subplots(4, 2, figsize=(20, 25))
+        plt.suptitle('Switching Performance', fontsize=20, fontweight='bold')
+    
+        # A dictionary to map plot titles to plotting functions
+        plot_functions = {
+            "Plot of Time Difference vs AT3": lambda: self.plot_time_difference_vs_AT3(df, axs[0, 0]),
+        }
+    
+        # Generate selected plots
+        for plot_title in selected_plots:
+            if plot_title in plot_functions:
+                plot_functions[plot_title]()
+    
+        # Adjust layout to prevent clipping of titles and labels
+        plt.tight_layout()
+        plt.subplots_adjust(hspace=0.4, wspace=0.1)
+    
+        # Display the plots
+        plt.show()
 
-
-    def perform_calculations(self, df, ambient_pressure):
-        # Example: Calculate 'dT[C]'
-        df['dT[C]'] = df['T_return'] - df['T_supply']
-        # Add further analysis and manipulations here
-        
-        # Example: Calculate humidity ratios using psychrolib
-        psychrolib.SetUnitSystem(psychrolib.SI)
-        df['W_U_Inlet'] = df.apply(lambda row: psychrolib.GetHumRatioFromRelHum(row['T_supply'], row['RH_avg'] / 100, ambient_pressure)*1000, axis=1)
-        # Continue with other calculations as per your provided logic
-
-
-
+    def plot_time_difference_vs_AT3(self, df, ax):
+        ax.plot(df['TimeDifference'], df['AT3'])
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('AT3')
+        ax.set_title('Plot of Time Difference vs AT3')
+        ax.grid(True)
+    
     @staticmethod
     def calculate_airflow(fan_speed, coefficient=0.8, intercept=165):
         return fan_speed * coefficient + intercept
