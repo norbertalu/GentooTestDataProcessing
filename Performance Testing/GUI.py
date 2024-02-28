@@ -151,11 +151,12 @@ class Application(tk.Tk):
             time_difference = (current_time.hour * 3600 + current_time.minute * 60 + current_time.second) - (start_time.hour * 3600 + start_time.minute * 60 + start_time.second)
             df.at[index, 'TimeDifference'] = time_difference / 60
 
-        """
         df['Total_Power'] = df['Watt']
         df['Total_Power'] = pd.to_numeric(df['Total_Power'], errors='coerce')
         # apply airflow
-        df['Regen_Fan_Airflow'] = df['Regan_Fan'].apply(self.calculate_airflow(fan_speed=100,coefficient=0.8, intercept=5))
+        #df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(self.calculate_airflow(fan_speed=100,coefficient=0.8, intercept=5))
+        df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, coefficient=0.8, intercept=5))
+        
         df['Process_Fan_Airflow_U'] = df['Process_Fan'].apply(self.calculate_airflow)
         df['Process_Fan_Airflow_S'] = df['Process_Fan'].apply(self.calculate_airflow)
         temp_df = df.copy()
@@ -163,8 +164,7 @@ class Application(tk.Tk):
         df['T_supply'] = temp_df[supply_temp].mean(axis=1)
         df['T_return'] = np.where(df['Left_Right'] == 1, df['AT3'], df['AT1'])
         df['dT[C]'] = df['T_return'] - df['T_supply']
-        """
-        
+
         # Save results to output folder
         df.to_excel(output_file_path, index=False)
         messagebox.showinfo("Info", "Calculation completed and results saved.")
