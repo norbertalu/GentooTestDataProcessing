@@ -229,11 +229,69 @@ class Application(tk.Tk):
 
         average_W_U_Inlet = df['W_U_Inlet'].mean()
         average_W_S_Inlet = df['W_S_Inlet'].mean()
-        
+
+        df['Exhaust Humidity Delta (Standard)'] = np.where(df['Left_Right'] == 1, df['W_exhaust'] - df['W_U_Inlet'], df['W_exhaust'] - df['W_S_Inlet'])
 
 
+        df['Exhaust Humidity Delta (Averaged Inlet)'] = np.where(df['Left_Right'] == 1,
+                                                                df['W_exhaust'] - average_W_U_Inlet,
+                                                                df['W_exhaust'] - average_W_S_Inlet)
 
+        df['Exhaust Humidity Delta (Averaged Inlet)'] = np.where(df['Left_Right'] == 1, df['W_exhaust'] - average_W_U_Inlet, df['W_exhaust'] - average_W_S_Inlet)
+        df['Supply Humidity Delta (Standard) [g/kg]'] = np.where(df['Left_Right'] == 1,
+                                                                df['W_U_Inlet'] - df['W_supply'],
+                                                                df['W_S_Inlet'] - df['W_supply'])
 
+        df['Supply Humidity Delta (Standard) [g/kg]'] = np.where(df['Left_Right'] == 1, df['W_U_Inlet'] - df['W_supply'], df['W_S_Inlet'] - df['W_supply'])
+
+        df['Supply Humidity Delta (Averaged Inlet)'] = np.where(df['Left_Right'] == 1,
+                                                                average_W_U_Inlet - df['W_supply'],
+                                                                average_W_S_Inlet - df['W_supply'])
+        df['Supply Humidity Delta (Averaged Inlet)'] = np.where(df['Left_Right'] == 1, average_W_U_Inlet - df['W_supply'], average_W_S_Inlet - df['W_supply'])
+        df['Process_airflow'] = np.where(df['Left_Right'] == 1,
+                                        df['Process_Fan_Airflow_U'],
+                                        df['Process_Fan_Airflow_S'])
+        df['Process V_dot'] = df['Process_airflow']/2118.88
+        df['Process M_dot [kg/s]'] = df['Process V_dot']*1.18
+        df['Regen V_dot'] = df['Regen_Fan_Airflow']/2118.88
+        df['Regen M_dot [kg/s]'] = df['Regen V_dot']*1.18
+        df['Q_lat_Supply [W]'] = df['Process M_dot [kg/s]']*(df['Supply Humidity Delta (Standard) [g/kg]']/1000)*2260*1000
+        df['Q_lat_Supply Filtered[W]']=df['Process M_dot [kg/s]']*(df['Supply Humidity Delta (Averaged Inlet)']/1000)*2260*1000
+        df['Q_lat_Supply [BTU/hr]'] = df['Q_lat_Supply [W]']*3.41
+        df['Q_lat_Supply Filtered[BTU/hr]'] = df['Q_lat_Supply Filtered[W]']*3.41
+
+        df['Q_sens [W]'] = df['Process M_dot [kg/s]']*1006*df['dT[C]']
+        df['Q_sens [BTU/hr]'] = df['Q_sens [W]']*3.41
+        df['Q_lat_Exhaust [W]'] = df['Regen M_dot [kg/s]']*(df['Exhaust Humidity Delta (Standard)']/1000)*2260*1000
+        df['Q_lat_Exhaust Filtered[W]'] = df['Regen M_dot [kg/s]']*(df['Exhaust Humidity Delta (Averaged Inlet)']/1000)*2260*1000
+        df['Q_lat_Exhaust [BTU/hr]'] = df['Q_lat_Exhaust [W]']*3.41
+        df['Q_lat_Exhaust Filtered[BTU/hr]'] = df['Q_lat_Exhaust Filtered[W]']*3.41
+
+        df['Q_tot (Exhaust Latent) [BTU/hr]'] = df['Q_sens [BTU/hr]']+df['Q_lat_Exhaust [BTU/hr]']
+        df['Q_tot (Supply Latent) [BTU/hr]'] = df['Q_sens [BTU/hr]'] + df['Q_lat_Supply Filtered[BTU/hr]']
+
+        df['EER (Exhaust Latent) [BTU/Wh]'] = df['Q_tot (Exhaust Latent) [BTU/hr]']/df['Total_Power']
+        df['EER (Supply Latent) [BTU/Wh]'] = df['Q_tot (Supply Latent) [BTU/hr]']/df['Total_Power']
+
+        df['Capacity'] = df['Q_sens [BTU/hr]']+ df['Q_lat_Exhaust [BTU/hr]']
+        df['COP'] = df['Capacity']/df['Total_Power']
+
+        df['CEER']=df['Capacity']/df['Total_Power']
+
+        df['Average_Power_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Total_Power'].transform('mean')
+        df['Average_Q_tot_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_tot (Exhaust Latent) [BTU/hr]'].transform('mean')
+        df['EER_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['EER (Exhaust Latent) [BTU/Wh]'].transform('mean')
+        df['Q_lat_5min'] = df.groupby((df['TimeDifference'] // 5) * 5)['Q_lat_Exhaust [BTU/hr]'].transform('mean')
+        window_size = 5
+        # Calculate the moving average for 'Total_Power'
+        df['Average_Power_5min'] = df['Total_Power'].rolling(window=window_size).mean()
+        df['Average_Q_tot_5min'] = df['Q_tot (Exhaust Latent) [BTU/hr]'].rolling(window=window_size).mean()
+        df['EER_5min'] = df['EER (Exhaust Latent) [BTU/Wh]'].rolling(window=window_size).mean()
+        df['Q_lat_5min'] = df['Q_lat_Exhaust [BTU/hr]'].rolling(window=window_size).mean()
+        df['Q_sens_5min']=df['Q_sens [BTU/hr]'].rolling(window=window_size).mean()
+        df['Capacity_5min']=df['Capacity'].rolling(window=window_size).mean()
+        df['COP_5min']=df['COP'].rolling(window=window_size).mean()
+        df['CEER_5min']=df['CEER'].rolling(window=window_size).mean()
 
         # Save results to output folder
         df.to_excel(output_file_path, index=False)
