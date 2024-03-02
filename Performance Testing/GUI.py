@@ -3,7 +3,8 @@ from tkinter import ttk, filedialog, messagebox
 import pandas as pd
 import numpy as np
 import psychrolib
-import matplotlib as plt
+import matplotlib.pyplot as plt
+import math
 
 # Setting the unit system for psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
@@ -14,7 +15,8 @@ class Application(tk.Tk):
         self.title("Transaera Testing Data Calculation Tool")
         self.prototypes = {
             "Gentoo P1": (0.8, 165),
-            "Gentoo P3": (0.9, 150)
+            "Gentoo P2": (0.9, 150),
+            "Caiman E1": (0.9, 150),
             # Add more prototypes as needed
         }
         self.create_widgets()
@@ -311,6 +313,7 @@ class Application(tk.Tk):
 
         # Save results to output folder
         df.to_excel(output_file_path, index=False)
+        self.generate_selected_plots(df)
         messagebox.showinfo("Info", "Calculation completed and results saved.")
 
     def merge_dataframes(self, df1, df2, time_threshold, columns_to_merge):
@@ -331,27 +334,43 @@ class Application(tk.Tk):
 
         return df1
     
-    def generate_selected_plots(self):
+    def generate_selected_plots(self,df):
         selected_indices = self.plot_selection_listbox.curselection()
         selected_plots = [self.plot_selection_listbox.get(i) for i in selected_indices]
-    
-        # Load or prepare your DataFrame here, for example:
-        df = self.prepare_plotting_dataframe()
-    
+
+        if not selected_plots:
+            messagebox.showinfo("Info", "Please select at least one plot to generate.")
+            return
+
+        # Calculate the number of rows needed for the selected plots (assuming 2 columns)
+        num_plots = len(selected_plots)
+        cols = 2  # Use 1 column if only one plot is selected
+        rows = math.ceil(num_plots / cols)
+
+
         # Create a figure for the plots
-        fig, axs = plt.subplots(4, 2, figsize=(20, 25))
-        plt.suptitle('Switching Performance', fontsize=20, fontweight='bold')
-    
+        fig, axs = plt.subplots(rows, cols, figsize=(20, 5 * rows),squeeze=False)
+        plt.suptitle('Performance Plotting', fontsize=20, fontweight='bold')
+
+        # Flatten axs for easy indexing
+        axs = axs.flatten()
+
         # A dictionary to map plot titles to plotting functions
         plot_functions = {
-            "Plot of Time Difference vs AT3": lambda: self.plot_time_difference_vs_AT3(df, axs[0, 0]),
+            "Plot of Time Difference vs AT3": lambda df, ax: self.plot_time_difference_vs_AT3(df, ax),
+            "Plot of Time vs Power": lambda df, ax:self.plot_time_difference_vs_Total_Power(df, ax),
+            "Plot of Time vs Total Cooling":lambda df, ax:self.plot_time_difference_vs_Total_Cooling(df, ax),
+            "Plot of Time vs EER":lambda df, ax:self.plot_time_difference_vs_EER(df, ax)
+
         }
+        # Iterate over selected plots and assign them to subplots dynamically
+        for i, plot_title in enumerate(selected_plots):
+            if plot_title in plot_functions and i < len(axs):
+                plot_functions[plot_title](df, axs[i])
     
-        # Generate selected plots
-        for plot_title in selected_plots:
-            if plot_title in plot_functions:
-                plot_functions[plot_title]()
-    
+        # Hide any unused axes if there are fewer plots than subplots
+        for j in range(num_plots, len(axs)):
+            fig.delaxes(axs[j])
         # Adjust layout to prevent clipping of titles and labels
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4, wspace=0.1)
@@ -360,11 +379,76 @@ class Application(tk.Tk):
         plt.show()
 
     def plot_time_difference_vs_AT3(self, df, ax):
+        required_columns = ['TimeDifference', 'AT3']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
         ax.plot(df['TimeDifference'], df['AT3'])
         ax.set_xlabel('Time Difference (Minute)')
         ax.set_ylabel('AT3')
         ax.set_title('Plot of Time Difference vs AT3')
         ax.grid(True)
+    
+    def plot_time_difference_vs_Total_Power(self, df, ax):
+        # Check for the existence of required columns in DataFrame
+        required_columns = ['TimeDifference', 'Total_Power', 'Average_Power_5min']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
+
+        # Plotting Total Power and its 5-minute average
+        ax.plot(df['TimeDifference'], df['Total_Power'], label='Total Power', marker='o', linestyle='-', markersize=4)
+        ax.plot(df['TimeDifference'], df['Average_Power_5min'], label='Average Power (5min)', marker='', linestyle='--')
+    
+        # Setting the labels, title, and grid
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('Power')
+        ax.set_title('Plot of Time vs Power')
+        ax.grid(True)
+    
+        # Displaying the legend
+        ax.legend()
+
+    def plot_time_difference_vs_Total_Cooling(self, df, ax):
+        # Check for the existence of required columns in DataFrame
+        required_columns = ['TimeDifference', 'Q_tot (Exhaust Latent) [BTU/hr]', 'Average_Q_tot_5min']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
+
+        # Plotting Total Power and its 5-minute average
+        ax.plot(df['TimeDifference'], df['Q_tot (Exhaust Latent) [BTU/hr]'], label='Total Cooling', marker='o', linestyle='-', markersize=4)
+        ax.plot(df['TimeDifference'], df['Average_Q_tot_5min'], label='Average Cooling (5min)', marker='', linestyle='--')
+    
+        # Setting the labels, title, and grid
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('Total Cooling')
+        ax.set_title('Plot of Time vs Total Cooling')
+        ax.grid(True)
+    
+        # Displaying the legend
+        ax.legend()
+
+    def plot_time_difference_vs_EER(self, df, ax):
+        # Check for the existence of required columns in DataFrame
+        required_columns = ['TimeDifference', 'EER (Exhaust Latent) [BTU/Wh]', 'EER_5min']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
+
+        # Plotting Total Power and its 5-minute average
+        ax.plot(df['TimeDifference'], df['EER (Exhaust Latent) [BTU/Wh]'], label='EER', marker='o', linestyle='-', markersize=4)
+        ax.plot(df['TimeDifference'], df['EER_5min'], label='Average EER (5min)', marker='', linestyle='--')
+    
+        # Setting the labels, title, and grid
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('EER')
+        ax.set_title('Plot of Time vs EER')
+        ax.grid(True)
+    
+        # Displaying the legend
+        ax.legend()
+
     
     @staticmethod
     def calculate_airflow(fan_speed, coefficient=0.8, intercept=165):
