@@ -5,6 +5,7 @@ import numpy as np
 import psychrolib
 import matplotlib.pyplot as plt
 import math
+import os
 
 # Setting the unit system for psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
@@ -116,7 +117,6 @@ class Application(tk.Tk):
 
         # Call generate_selected_plots with the specified time period for replotting
         self.generate_selected_plots(self.df,start_time=start_time, end_time=end_time)
-
 
 
     def prepare_dataframe(self, file_path, time_format='%H:%M:%S', num_cols=None):
@@ -363,6 +363,12 @@ class Application(tk.Tk):
         return df1
     
     def generate_selected_plots(self,df,start_time=None, end_time=None):
+        output_folder = self.output_folder_entry.get()
+        base_file_name = self.saved_file_name_entry.get().strip()
+        if not base_file_name.endswith('.png'):
+            base_file_name += '.png'
+        base_file_name = base_file_name[:-5] 
+
         if start_time is not None and end_time is not None:
             df = df[(df['TimeDifference'] >= start_time) & (df['TimeDifference'] <= end_time)]
             if df.empty:
@@ -408,6 +414,9 @@ class Application(tk.Tk):
         # Adjust layout to prevent clipping of titles and labels
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4, wspace=0.1)
+        filename = f"{plot_title.replace(' ', '_')}.png"
+        plot_path = os.path.join(output_folder,filename)
+        plt.savefig(plot_path)
     
         # Display the plots
         plt.show()
