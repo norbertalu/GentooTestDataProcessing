@@ -84,16 +84,39 @@ class Application(tk.Tk):
         # Populate the Listbox with plot options
         plot_options = ["Plot of Time Difference vs AT3", "Plot of Time vs Power", 
                     "Plot of Time vs Total Cooling", "Plot of Time vs EER", 
-                    "Plot of Time vs Latent Capacity", "Plot of Time vs Sensible Capacity", 
-                    "Plot of Time vs Capacity"]
+                    "Plot of Time vs Latent Capacity", "Plot of Time vs Sensible Capacity"]
         for option in plot_options:
             self.plot_selection_listbox.insert(tk.END, option)
     
         # Adjust the Calculate button row
         tk.Button(self, text="Calculate", command=self.on_calculate_clicked).grid(row=10, column=1)
 
+        tk.Label(self, text="Replot Start Time (Minute):").grid(row=11, column=0)
+        self.replot_start_time_entry = tk.Entry(self)
+        self.replot_start_time_entry.grid(row=11, column=1)
+
+        tk.Label(self, text="Replot End Time (Minute):").grid(row=12, column=0)
+        self.replot_end_time_entry = tk.Entry(self)
+        self.replot_end_time_entry.grid(row=12, column=1)
+
         # Add a Plot button
-        tk.Button(self, text="Generate Plots", command=self.generate_selected_plots).grid(row=11, column=1)
+        tk.Button(self, text="Re-generate Plots", command=self.replot_selected_period).grid(row=13, column=1)
+
+    def replot_selected_period(self):
+        try:
+            start_time = float(self.replot_start_time_entry.get())
+            end_time = float(self.replot_end_time_entry.get())
+        except ValueError:
+            messagebox.showinfo("Error", "Invalid start or end time. Please enter numeric values.")
+            return
+
+        if start_time >= end_time:
+            messagebox.showinfo("Error", "Start time must be less than end time.")
+            return
+
+        # Call generate_selected_plots with the specified time period for replotting
+        self.generate_selected_plots(self.df,start_time=start_time, end_time=end_time)
+
 
 
     def prepare_dataframe(self, file_path, time_format='%H:%M:%S', num_cols=None):
@@ -316,6 +339,7 @@ class Application(tk.Tk):
         df['CEER_5min']=df['CEER'].rolling(window=window_size).mean()
 
         # Save results to output folder
+        self.df = df
         df.to_excel(output_file_path, index=False)
         self.generate_selected_plots(df)
         messagebox.showinfo("Info", "Calculation completed and results saved.")
@@ -338,7 +362,12 @@ class Application(tk.Tk):
 
         return df1
     
-    def generate_selected_plots(self,df):
+    def generate_selected_plots(self,df,start_time=None, end_time=None):
+        if start_time is not None and end_time is not None:
+            df = df[(df['TimeDifference'] >= start_time) & (df['TimeDifference'] <= end_time)]
+            if df.empty:
+                messagebox.showinfo("Error", "No data available for the selected time period.")
+                return
         selected_indices = self.plot_selection_listbox.curselection()
         selected_plots = [self.plot_selection_listbox.get(i) for i in selected_indices]
 
