@@ -15,57 +15,53 @@ def initialize_plotter():
 def move_to(x, y, feed_rate):
     return [f"G1 F{feed_rate} X{x} Y{y}"]
 
-def generate_swirl_path_horizontal(width, height, loops, speed,initial_height):
+def generate_swirl_path_vertical(width, height, loops, speed,initial_height):
     gcode = []
 
     gcode.append(f"G0 F1000 X{initial_height:.4f} Y0.0000")
     gcode.append("G4 P30 ; Pause for 30 seconds for tool loading")
 
-    step_x = height / (loops)
+
+    # Adjust step_y to ensure full coverage across the width
+    step_y = width / (loops - 1)  # Adjusted to account for spaces between loops
+    
     current_x = initial_height
     current_y = 0
-    move_right = True
+    move_up = True
 
-    first_iteration = True
-
+    # Loop through each swirl
     for i in range(loops):
         # Move vertically (up or down)
-        #direction = 1 if i % 2 == 0 else -1
-        if not first_iteration:
-            current_x += step_x
-            gcode.extend(move_to(current_x, current_y, speed))
-        
-        if first_iteration:
+        if i > 0:  # Skip the first iteration for vertical movement to start correctly
+            current_y += step_y
+            # Ensure current_y does not exceed the width boundary
+            current_y = min(current_y, width)
             gcode.extend(move_to(current_x, current_y, speed))
 
-        # If moving right, go all the way to the maximum Y value
-        if move_right:
-            current_y = width
-            gcode.extend(move_to(current_x, current_y, speed))
-            move_right = False
+        # Alternate between moving up and down
+        if move_up:
+            current_x = height  # Moving up
+            move_up = False
         else:
-            current_y = 0
-            gcode.extend(move_to(current_x, current_y, speed))
-            move_right = True
-        first_iteration = False
-    # After the last loop, return to home position (0,0)
-    #gcode.extend(move_to(initial_height, 0, speed))
+            current_x = initial_height  # Moving down
+            move_up = True
+        gcode.extend(move_to(current_x, current_y, speed))
 
     return gcode
 
 
-def validate_position_horizontal(x, y, max_x=800, max_y=300):
+def validate_position_vertical(y, x, max_y=800, max_x=300):
     if x < 0 or x > max_x or y < 0 or y > max_y:
         raise ValueError(f"Path exceeds boundary limits at X:{x}, Y:{y}. Max X:{max_x}, Max Y:{max_y}")
 
 def move_to(x, y, feed_rate):
-    validate_position_horizontal(x, y)
+    validate_position_vertical(x, y)
     return [f"G1 F{feed_rate} X{x:.4f} Y{y:.4f}"]
 
 def main(width, height, speed, loops,initial_height ):
     try:
         gcode = []
-        gcode.extend(generate_swirl_path_horizontal(width, height, loops, speed,initial_height))
+        gcode.extend(generate_swirl_path_vertical(width, height, loops, speed,initial_height))
 
         # Define the output path and filename
         OUTPUT_PATH = 'G-code generator'
@@ -87,9 +83,9 @@ def main(width, height, speed, loops,initial_height ):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    width = 300
-    height = 420
+    width = 290
+    height = 635
     speed = 250
-    loops = 10
-    Height_start_point = 30
+    loops = 7
+    Height_start_point = 70
     main(width, height, speed, loops, Height_start_point)  # Example parameters

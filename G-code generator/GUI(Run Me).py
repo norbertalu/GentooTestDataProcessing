@@ -1,10 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import filedialog
+from tkinter import ttk
 import os
 import math
-from gcode import generate_swirl_path
-from gcode import validate_position
+from gcode import generate_swirl_path_horizontal
+from gcode import validate_position_horizontal
+from gcode_vertical import generate_swirl_path_vertical
+from gcode_vertical import validate_position_vertical
 
 def select_output_path():
     directory = filedialog.askdirectory()
@@ -20,6 +23,16 @@ def generate_gcode():
 
         # Fixed speed
         speed = 250
+
+        path_direction = path_direction_var.get()
+
+        # Choose the correct validation and generation functions
+        if path_direction == "Horizontal":
+            validate_position = validate_position_horizontal
+            generate_swirl_path = generate_swirl_path_horizontal
+        else:  # Vertical
+            validate_position = validate_position_vertical
+            generate_swirl_path = generate_swirl_path_vertical
 
         # Validate position
         validate_position(initial_height, 0, max_x=width, max_y=height)  # Validate start position
@@ -66,31 +79,36 @@ height_entry.grid(row=1, column=1)
 tk.Label(root, text="Feed Speed (mm/min):").grid(row=2, column=0)
 tk.Label(root, text="250 (fixed speed)").grid(row=2, column=1)
 
-
 tk.Label(root, text="Number of paths:").grid(row=3, column=0)
 loops_entry = tk.Entry(root)
 loops_entry.grid(row=3, column=1)
 
+# Initial Height
 tk.Label(root, text="Initial Height (mm):").grid(row=4, column=0)
 initial_height_entry = tk.Entry(root)
 initial_height_entry.grid(row=4, column=1)
 
+# Path direction selection placed next to Initial Height on the same row
+tk.Label(root, text="Path Direction:").grid(row=5, column=0)
+path_direction_var = tk.StringVar()
+path_direction_combobox = ttk.Combobox(root, textvariable=path_direction_var, values=["Horizontal", "Vertical"], width=15)
+path_direction_combobox.grid(row=5, column=1)
+path_direction_combobox.current(0)  # Default to Horizontal
+
 # Output path selection
 output_path_var = tk.StringVar()
-tk.Button(root, text="Select Output Path", command=select_output_path).grid(row=5, column=0)
+tk.Button(root, text="Select Output Path", command=select_output_path).grid(row=6, column=0)
 output_path_label = tk.Label(root, textvariable=output_path_var)
-output_path_label.grid(row=5, column=1,sticky='ew')
+output_path_label.grid(row=6, column=1, sticky='ew')
 
-tk.Label(root, text="Filename:").grid(row=6, column=0)
+# Filename Entry
+tk.Label(root, text="Filename:").grid(row=7, column=0)
 filename_entry = tk.Entry(root)
-filename_entry.grid(row=6, column=1)
+filename_entry.grid(row=7, column=1)
 
-# Create and place the generate button
+# Generate G-code Button
 generate_button = tk.Button(root, text="Generate G-code", command=generate_gcode)
-generate_button.grid(row=6, column=0, columnspan=2,sticky='ew')
-generate_button.grid(row=7, column=0, columnspan=2, sticky='ew')
-
-
+generate_button.grid(row=8, column=0, columnspan=4, sticky='ew')
 
 # Start the GUI event loop
 root.mainloop()

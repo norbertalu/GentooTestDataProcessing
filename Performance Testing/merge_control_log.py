@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Constants
-TIME_THRESHOLD_SECONDS = 5
+TIME_THRESHOLD_SECONDS = 10
 INPUT_PATH = 'Performance Testing/Input csv/'
 OUTPUT_PATH = 'Performance Testing/Output excel files/'
 
@@ -12,15 +12,24 @@ OUTPUT_PATH = 'Performance Testing/Output excel files/'
 psychrolib.SetUnitSystem(psychrolib.SI)
 
 # Function to parse and clean data
-def prepare_dataframe(file_path, time_format, timestamp_col_index=1):
-    df = pd.read_csv(file_path, delimiter='\t')
+def prepare_dataframe(file_path, time_format, timestamp_col_index=1, num_cols=None):
+    # Read only the specified number of columns, if num_cols is provided
+    if num_cols is not None:
+        cols_to_read = list(range(num_cols))
+        df = pd.read_csv(file_path, delimiter='\t', usecols=cols_to_read, header=None)
+    else:
+        df = pd.read_csv(file_path, delimiter='\t', header=None)
+
     df.iloc[:, 2:] = df.iloc[:, 2:].apply(pd.to_numeric, errors='coerce')
     df['valid_times'] = pd.to_datetime(df.iloc[:, timestamp_col_index], format=time_format, errors='coerce')
     df['valid_times'] = df['valid_times'].dt.time
+
     return df
 
+
 # Read and prepare the first dataframe
-df = prepare_dataframe(INPUT_PATH + 'test18.txt', '%H:%M:%S')
+
+df = prepare_dataframe(INPUT_PATH + 'yeti.txt', '%H:%M:%S', num_cols=37)
 print(df['valid_times'])
 
 # Read and prepare the second dataframe
@@ -63,8 +72,10 @@ def merge_dataframes(df1, df2, time_threshold):
 # Perform the merge
 df = merge_dataframes(df, new_df, TIME_THRESHOLD_SECONDS)
 
+
+
 # Save the merged dataframe to a new Excel file
-output_file = OUTPUT_PATH + 'updated_data_with_merged_columns.xlsx'
+output_file = OUTPUT_PATH + 'new.xlsx'
 df.to_excel(output_file, index=False)
 
 print("Data merged and saved to", output_file)
