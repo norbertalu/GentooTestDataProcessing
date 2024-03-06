@@ -20,6 +20,7 @@ class Application(tk.Tk):
             # Add more prototypes as needed
         }
         self.create_widgets()
+        self.load_last_selections()
     
     def create_widgets(self):
         # Main Input File Selection
@@ -108,16 +109,19 @@ class Application(tk.Tk):
         file_path = filedialog.askopenfilename()
         self.datasheet_entry.delete(0, tk.END)
         self.datasheet_entry.insert(0, file_path)
+        self.save_last_selections()
 
     def select_control_log_input_file(self):
         file_path = filedialog.askopenfilename()
         self.control_log_input_file_entry.delete(0, tk.END)
         self.control_log_input_file_entry.insert(0, file_path)
+        self.save_last_selections()
 
     def select_output_folder(self):
         folder_path = filedialog.askdirectory()
         self.output_folder_entry.delete(0, tk.END)
         self.output_folder_entry.insert(0, folder_path)
+        self.save_last_selections()
 
     def on_calculate_clicked(self):
         input_file = self.datasheet_entry.get()
@@ -491,6 +495,30 @@ class Application(tk.Tk):
         ax.legend()
 
 
+    def save_last_selections(self):
+        paths = {
+        'datasheet_path': self.datasheet_entry.get(),
+        'control_log_path': self.control_log_input_file_entry.get(),
+        'output_folder_path': self.output_folder_entry.get()
+        }
+        with open('last_selections.txt', 'w') as file:
+            for path in paths.values():
+                file.write(f"{path}\n")
+
+    def load_last_selections(self):
+        try:
+            with open('last_selections.txt', 'r') as file:
+                paths = file.readlines()
+                paths = [path.strip() for path in paths]
+                if len(paths) == 3:
+                    self.datasheet_entry.insert(0, paths[0])
+                    self.control_log_input_file_entry.insert(0, paths[1])
+                    self.output_folder_entry.insert(0, paths[2])
+        except FileNotFoundError:
+            # It's okay if the file doesn't exist; it means the program has never been run before.
+            pass
+
+    
     
     @staticmethod
     def calculate_airflow(fan_speed, coefficient=0.8, intercept=165):
