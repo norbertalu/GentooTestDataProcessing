@@ -360,8 +360,9 @@ class Application(tk.Tk):
             "Plot of Time Difference vs AT3": lambda df, ax: self.plot_time_difference_vs_AT3(df, ax),
             "Plot of Time vs Power": lambda df, ax:self.plot_time_difference_vs_Total_Power(df, ax),
             "Plot of Time vs Total Cooling":lambda df, ax:self.plot_time_difference_vs_Total_Cooling(df, ax),
-            "Plot of Time vs EER":lambda df, ax:self.plot_time_difference_vs_EER(df, ax)
-
+            "Plot of Time vs EER":lambda df, ax:self.plot_time_difference_vs_EER(df, ax),
+            "Plot of Time vs Latent Capacity":lambda df, ax:self.plot_time_difference_vs_Q_lat_Exhaust(df, ax),
+            "Plot of Time vs Sensible Capacity":lambda df, ax:self.plot_time_difference_vs_Q_sens(df, ax)
         }
         # Iterate over selected plots and assign them to subplots dynamically
         for i, plot_title in enumerate(selected_plots):
@@ -448,6 +449,47 @@ class Application(tk.Tk):
     
         # Displaying the legend
         ax.legend()
+
+    def plot_time_difference_vs_Q_lat_Exhaust(self, df, ax):
+        # Check for the existence of required columns in DataFrame
+        required_columns = ['TimeDifference', 'Q_lat_Exhaust [BTU/hr]', 'Q_lat_5min']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
+
+        # Plotting Total Power and its 5-minute average
+        ax.plot(df['TimeDifference'], df['Q_lat_Exhaust [BTU/hr]'], label='Q_lat', marker='o', linestyle='-', markersize=4)
+        ax.plot(df['TimeDifference'], df['Q_lat_5min'], label='Average Q_lat (5min)', marker='', linestyle='--')
+    
+        # Setting the labels, title, and grid
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('Q_lat_Exhaust')
+        ax.set_title('Plot of Time vs Q_lat_Exhaust')
+        ax.grid(True)
+    
+        # Displaying the legend
+        ax.legend()
+
+    def plot_time_difference_vs_Q_sens(self, df, ax):
+        # Check for the existence of required columns in DataFrame
+        required_columns = ['TimeDifference', 'Q_sens [BTU/hr]', 'Q_sens_5min']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
+
+        # Plotting Total Power and its 5-minute average
+        ax.plot(df['TimeDifference'], df['Q_sens [BTU/hr]'], label='Q_sens', marker='o', linestyle='-', markersize=4)
+        ax.plot(df['TimeDifference'], df['Q_sens_5min'], label='Average Q_sens (5min)', marker='', linestyle='--')
+    
+        # Setting the labels, title, and grid
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('Q_snes')
+        ax.set_title('Plot of Time vs Q_sens')
+        ax.grid(True)
+    
+        # Displaying the legend
+        ax.legend()
+
 
     
     @staticmethod
