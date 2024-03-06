@@ -85,7 +85,7 @@ class Application(tk.Tk):
         # Populate the Listbox with plot options
         plot_options = ["Plot of Time Difference vs AT3", "Plot of Time vs Power", 
                     "Plot of Time vs Total Cooling", "Plot of Time vs EER", 
-                    "Plot of Time vs Latent Capacity", "Plot of Time vs Sensible Capacity"]
+                    "Plot of Time vs Latent Capacity", "Plot of Time vs Sensible Capacity","Plot of Time vs COP"]
         for option in plot_options:
             self.plot_selection_listbox.insert(tk.END, option)
     
@@ -401,7 +401,8 @@ class Application(tk.Tk):
             "Plot of Time vs Total Cooling":lambda df, ax:self.plot_time_difference_vs_Total_Cooling(df, ax),
             "Plot of Time vs EER":lambda df, ax:self.plot_time_difference_vs_EER(df, ax),
             "Plot of Time vs Latent Capacity":lambda df, ax:self.plot_time_difference_vs_Q_lat_Exhaust(df, ax),
-            "Plot of Time vs Sensible Capacity":lambda df, ax:self.plot_time_difference_vs_Q_sens(df, ax)
+            "Plot of Time vs Sensible Capacity":lambda df, ax:self.plot_time_difference_vs_Q_sens(df, ax),
+            "Plot of Time vs COP":lambda df, ax:self.plot_time_difference_vs_COP(df, ax)
         }
         # Iterate over selected plots and assign them to subplots dynamically
         for i, plot_title in enumerate(selected_plots):
@@ -527,6 +528,26 @@ class Application(tk.Tk):
         ax.set_xlabel('Time Difference (Minute)')
         ax.set_ylabel('Q_snes')
         ax.set_title('Plot of Time vs Q_sens')
+        ax.grid(True)
+    
+        # Displaying the legend
+        ax.legend()
+
+    def plot_time_difference_vs_COP(self, df, ax):
+        # Check for the existence of required columns in DataFrame
+        required_columns = ['TimeDifference', 'COP', 'COP_5min']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns for plotting: {', '.join(missing_columns)}")
+
+        # Plotting Total Power and its 5-minute average
+        ax.plot(df['TimeDifference'], df['COP'], label='COP', marker='o', linestyle='-', markersize=4)
+        ax.plot(df['TimeDifference'], df['COP_5min'], label='COP (5min)', marker='', linestyle='--')
+    
+        # Setting the labels, title, and grid
+        ax.set_xlabel('Time Difference (Minute)')
+        ax.set_ylabel('COP')
+        ax.set_title('Plot of Time vs COP')
         ax.grid(True)
     
         # Displaying the legend
