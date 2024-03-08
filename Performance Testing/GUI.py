@@ -365,6 +365,10 @@ class Application(tk.Tk):
     def generate_selected_plots(self,df,start_time=None, end_time=None):
         output_folder = self.output_folder_entry.get()
         base_file_name = self.saved_file_name_entry.get().strip()
+
+        if base_file_name.endswith('.png'):
+            base_file_name = base_file_name[:-4]
+
         if not base_file_name.endswith('.png'):
             base_file_name += '.png'
         base_file_name = base_file_name[:-5] 
@@ -415,11 +419,21 @@ class Application(tk.Tk):
         # Adjust layout to prevent clipping of titles and labels
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4, wspace=0.1)
-        filename = f"{plot_title.replace(' ', '_')}.png"
-        plot_path = os.path.join(output_folder,filename)
-        plt.savefig(plot_path)
+        # Finding a unique filename by incrementing a number suffix if needed
+        sequence_number = 1
+        while True:
+            if sequence_number == 1:
+                filename = f"{base_file_name}.png"
+            else:
+                filename = f"{base_file_name}_{sequence_number}.png"
+            plot_path = os.path.join(output_folder, filename)
+        
+            # Break the loop if the filename does not exist yet
+            if not os.path.exists(plot_path):
+                break
+            sequence_number += 1
     
-        # Display the plots
+        plt.savefig(plot_path)
         plt.show()
 
     def plot_time_difference_vs_AT3(self, df, ax):
