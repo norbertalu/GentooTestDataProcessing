@@ -15,9 +15,8 @@ class Application(tk.Tk):
         super().__init__()
         self.title("Transaera Testing Data Calculation Tool")
         self.prototypes = {
-            "Gentoo P1": (0.8, 165),
-            "Gentoo P2": (0.9, 150),
-            "Caiman E1": (0.9, 150),
+            "Gentoo P1": {"regen": (0.8, 165), "process_s": (0.6, 189),"process_u": (0.7, 189)},
+            "Gentoo P2": {"regen": (0.9, 150), "process_s": (0.7, 175),"process_u": (0.8, 189)},
             # Add more prototypes as needed
         }
         self.create_widgets()
@@ -151,6 +150,7 @@ class Application(tk.Tk):
         control_log_input_file = self.control_log_input_file_entry.get()
         output_folder = self.output_folder_entry.get()
         ambient_pressure = float(self.ambient_pressure_entry.get())
+        current_prototype = self.prototype_var.get()
     
         saved_file_name = self.saved_file_name_entry.get().strip()
         # Ensure the file name ends with .xlsx
@@ -200,9 +200,10 @@ class Application(tk.Tk):
         df['Total_Power'] = pd.to_numeric(df['Total_Power'], errors='coerce')
         # apply airflow
         #df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(self.calculate_airflow(fan_speed=100,coefficient=0.8, intercept=5))
-        df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, coefficient=0.8, intercept=5))
-        df['Process_Fan_Airflow_U'] = df['Process_Fan'].apply(self.calculate_airflow)
-        df['Process_Fan_Airflow_S'] = df['Process_Fan'].apply(self.calculate_airflow)
+        #df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, coefficient=0.8, intercept=5))
+        df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, prototype=current_prototype, fan_type='regen'))
+        df['Process_Fan_Airflow_U'] = df['Process_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, prototype=current_prototype, fan_type='process_u'))
+        df['Process_Fan_Airflow_S'] = df['Process_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, prototype=current_prototype, fan_type='process_s'))
         temp_df = df.copy()
         supply_temp = temp_df.columns[5:11]
         df['T_supply'] = temp_df[supply_temp].mean(axis=1)
@@ -591,10 +592,11 @@ class Application(tk.Tk):
             # It's okay if the file doesn't exist; it means the program has never been run before.
             pass
 
-    
-    
-    @staticmethod
-    def calculate_airflow(fan_speed, coefficient=0.8, intercept=165):
+    def calculate_airflow(self, fan_speed, prototype, fan_type):
+        if prototype in self.prototypes and fan_type in self.prototypes[prototype]:
+            coefficient, intercept = self.prototypes[prototype][fan_type]
+        else:
+            raise ValueError(f"Prototype {prototype} or fan type {fan_type} not found.")
         return fan_speed * coefficient + intercept
 
 if __name__ == "__main__":
