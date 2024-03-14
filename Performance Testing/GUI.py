@@ -1,11 +1,13 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, Toplevel, Label
 import pandas as pd
 import numpy as np
 import psychrolib
 import matplotlib.pyplot as plt
 import math
 import os
+from PIL import Image, ImageTk
+
 
 # Setting the unit system for psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
@@ -49,7 +51,10 @@ class Application(tk.Tk):
         # Assuming self.prototypes is defined elsewhere
         self.prototype_dropdown['values'] = list(self.prototypes.keys())  
         self.prototype_dropdown.current(0)  # Default to first prototype
-        
+
+        # Binding the selection event
+        self.prototype_dropdown.bind("<<ComboboxSelected>>", self.prototype_selected)
+
         # Ambient Pressure Entry
         tk.Label(self, text="Ambient Pressure (Pa):").grid(row=4, column=0)
         self.ambient_pressure_entry = tk.Entry(self)
@@ -62,22 +67,7 @@ class Application(tk.Tk):
         self.saved_file_name_entry.grid(row=5, column=1)
         self.saved_file_name_entry.insert(0, "")  # Default file name
 
-        # RH Sensor Table
-        self.rh_station_positions = ["Process Outlet", "Process Inlet"]  # Add more positions as needed
-        self.rh_sensor_names = [f"RH{i}" for i in range(1, 9)]  # RH1 to RH8
-
-        # Create Labels and Dropdowns for each station position
-        self.rh_selection_widgets = []
-        for i, position in enumerate(self.rh_station_positions, start=6):  # Adjust start index as needed
-            tk.Label(self, text=position).grid(row=i, column=0)
-            rh_var = tk.StringVar()
-            rh_dropdown = ttk.Combobox(self, textvariable=rh_var, values=self.rh_sensor_names)
-            rh_dropdown.grid(row=i, column=1)
-            # Set default values for the first two positions
-            rh_dropdown.current(0 if i == 6 else 1 if i == 7 else 0)
-            self.rh_selection_widgets.append((position, rh_var))
-
-        tk.Label(self, text="Select Plots:").grid(row=9, column=0, sticky='w')
+        tk.Label(self, text="Select Plots:").grid(row=9, column=0)
         self.plot_selection_listbox = tk.Listbox(self, selectmode='multiple', height=10)
         self.plot_selection_listbox.grid(row=9, column=1, columnspan=2, sticky='ew')
     
@@ -102,6 +92,7 @@ class Application(tk.Tk):
         # Add a Plot button
         tk.Button(self, text="Re-generate Plots", command=self.replot_selected_period).grid(row=13, column=1)
 
+
     def replot_selected_period(self):
         try:
             start_time = float(self.replot_start_time_entry.get())
@@ -116,7 +107,6 @@ class Application(tk.Tk):
 
         # Call generate_selected_plots with the specified time period for replotting
         self.generate_selected_plots(self.df,start_time=start_time, end_time=end_time)
-
 
     def prepare_dataframe(self, file_path, time_format='%H:%M:%S', num_cols=None):
         """Prepares and cleans the dataframe from the given file."""
@@ -144,6 +134,10 @@ class Application(tk.Tk):
         self.output_folder_entry.delete(0, tk.END)
         self.output_folder_entry.insert(0, folder_path)
         self.save_last_selections()
+
+    def prototype_selected(self,event=None):
+        selected_prototype = self.prototype_var.get()
+        self.show_pid_image(selected_prototype)
 
     def on_calculate_clicked(self):
         input_file = self.datasheet_entry.get()
@@ -598,6 +592,18 @@ class Application(tk.Tk):
         else:
             raise ValueError(f"Prototype {prototype} or fan type {fan_type} not found.")
         return fan_speed * coefficient + intercept
+    
+    def show_pid_image(self, prototype_name):
+        image_path = f"PID/{prototype_name.replace(' ', '_')}.png"
+        try:
+            img = Image.open(image_path)
+            imgtk = ImageTk.PhotoImage(image=img)
+            pid_window = Toplevel(self)
+            pid_window.title(f"P&ID for {prototype_name}")
+            Label(pid_window, image=imgtk).pack()
+            pid_window.imgtk = imgtk  # Keep a reference to avoid garbage collection
+        except FileNotFoundError:
+            print(f"Image file not found: {image_path}")
 
 if __name__ == "__main__":
     psychrolib.SetUnitSystem(psychrolib.SI)
