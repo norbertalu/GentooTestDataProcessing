@@ -1,0 +1,3 @@
+/Users/norberta/Desktop/new.txt
+/Users/norberta/Desktop/new_log.txt
+/Users/norberta/Downloads
