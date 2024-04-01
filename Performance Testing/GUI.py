@@ -1,11 +1,13 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, Toplevel, Label
 import pandas as pd
 import numpy as np
 import psychrolib
 import matplotlib.pyplot as plt
 import math
 import os
+from PIL import Image, ImageTk
+
 
 # Setting the unit system for psychrolib
 psychrolib.SetUnitSystem(psychrolib.SI)
@@ -15,9 +17,8 @@ class Application(tk.Tk):
         super().__init__()
         self.title("Transaera Testing Data Calculation Tool")
         self.prototypes = {
-            "Gentoo P1": (0.8, 165),
-            "Gentoo P2": (0.9, 150),
-            "Caiman E1": (0.9, 150),
+            "Gentoo P1": {"regen": (0.8, 165), "process_s": (0.6, 189),"process_u": (0.7, 189)},
+            "Gentoo P2": {"regen": (0.9, 150), "process_s": (0.7, 175),"process_u": (0.8, 189)},
             # Add more prototypes as needed
         }
         self.create_widgets()
@@ -50,7 +51,10 @@ class Application(tk.Tk):
         # Assuming self.prototypes is defined elsewhere
         self.prototype_dropdown['values'] = list(self.prototypes.keys())  
         self.prototype_dropdown.current(0)  # Default to first prototype
-        
+
+        # Binding the selection event
+        self.prototype_dropdown.bind("<<ComboboxSelected>>", self.prototype_selected)
+
         # Ambient Pressure Entry
         tk.Label(self, text="Ambient Pressure (Pa):").grid(row=4, column=0)
         self.ambient_pressure_entry = tk.Entry(self)
@@ -63,22 +67,7 @@ class Application(tk.Tk):
         self.saved_file_name_entry.grid(row=5, column=1)
         self.saved_file_name_entry.insert(0, "")  # Default file name
 
-        # RH Sensor Table
-        self.rh_station_positions = ["Process Outlet", "Process Inlet"]  # Add more positions as needed
-        self.rh_sensor_names = [f"RH{i}" for i in range(1, 9)]  # RH1 to RH8
-
-        # Create Labels and Dropdowns for each station position
-        self.rh_selection_widgets = []
-        for i, position in enumerate(self.rh_station_positions, start=6):  # Adjust start index as needed
-            tk.Label(self, text=position).grid(row=i, column=0)
-            rh_var = tk.StringVar()
-            rh_dropdown = ttk.Combobox(self, textvariable=rh_var, values=self.rh_sensor_names)
-            rh_dropdown.grid(row=i, column=1)
-            # Set default values for the first two positions
-            rh_dropdown.current(0 if i == 6 else 1 if i == 7 else 0)
-            self.rh_selection_widgets.append((position, rh_var))
-
-        tk.Label(self, text="Select Plots:").grid(row=9, column=0, sticky='w')
+        tk.Label(self, text="Select Plots:").grid(row=9, column=0)
         self.plot_selection_listbox = tk.Listbox(self, selectmode='multiple', height=10)
         self.plot_selection_listbox.grid(row=9, column=1, columnspan=2, sticky='ew')
     
@@ -103,6 +92,7 @@ class Application(tk.Tk):
         # Add a Plot button
         tk.Button(self, text="Re-generate Plots", command=self.replot_selected_period).grid(row=13, column=1)
 
+
     def replot_selected_period(self):
         try:
             start_time = float(self.replot_start_time_entry.get())
@@ -117,7 +107,6 @@ class Application(tk.Tk):
 
         # Call generate_selected_plots with the specified time period for replotting
         self.generate_selected_plots(self.df,start_time=start_time, end_time=end_time)
-
 
     def prepare_dataframe(self, file_path, time_format='%H:%M:%S', num_cols=None):
         """Prepares and cleans the dataframe from the given file."""
@@ -146,14 +135,27 @@ class Application(tk.Tk):
         self.output_folder_entry.insert(0, folder_path)
         self.save_last_selections()
 
+    def prototype_selected(self,event=None):
+        selected_prototype = self.prototype_var.get()
+        self.show_pid_image(selected_prototype)
+
     def on_calculate_clicked(self):
         input_file = self.datasheet_entry.get()
         control_log_input_file = self.control_log_input_file_entry.get()
         output_folder = self.output_folder_entry.get()
         ambient_pressure = float(self.ambient_pressure_entry.get())
+        current_prototype = self.prototype_var.get()
     
         saved_file_name = self.saved_file_name_entry.get().strip()
         # Ensure the file name ends with .xlsx
+        
+
+        if not output_folder or not os.path.isdir(output_folder):
+            messagebox.showwarning("Warning","Output folder is not specified or does not exist.")
+            return
+        elif not saved_file_name:
+            messagebox.showwarning("Warning", "Invalid or no file name provided.")
+        
         if not saved_file_name.endswith('.xlsx'):
             saved_file_name += '.xlsx'
         output_file_path = f"{output_folder}/{saved_file_name}"
@@ -200,9 +202,10 @@ class Application(tk.Tk):
         df['Total_Power'] = pd.to_numeric(df['Total_Power'], errors='coerce')
         # apply airflow
         #df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(self.calculate_airflow(fan_speed=100,coefficient=0.8, intercept=5))
-        df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, coefficient=0.8, intercept=5))
-        df['Process_Fan_Airflow_U'] = df['Process_Fan'].apply(self.calculate_airflow)
-        df['Process_Fan_Airflow_S'] = df['Process_Fan'].apply(self.calculate_airflow)
+        #df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, coefficient=0.8, intercept=5))
+        df['Regen_Fan_Airflow'] = df['Regen_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, prototype=current_prototype, fan_type='regen'))
+        df['Process_Fan_Airflow_U'] = df['Process_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, prototype=current_prototype, fan_type='process_u'))
+        df['Process_Fan_Airflow_S'] = df['Process_Fan'].apply(lambda x: self.calculate_airflow(fan_speed=x, prototype=current_prototype, fan_type='process_s'))
         temp_df = df.copy()
         supply_temp = temp_df.columns[5:11]
         df['T_supply'] = temp_df[supply_temp].mean(axis=1)
@@ -365,6 +368,10 @@ class Application(tk.Tk):
     def generate_selected_plots(self,df,start_time=None, end_time=None):
         output_folder = self.output_folder_entry.get()
         base_file_name = self.saved_file_name_entry.get().strip()
+
+        if base_file_name.endswith('.png'):
+            base_file_name = base_file_name[:-4]
+
         if not base_file_name.endswith('.png'):
             base_file_name += '.png'
         base_file_name = base_file_name[:-5] 
@@ -415,11 +422,21 @@ class Application(tk.Tk):
         # Adjust layout to prevent clipping of titles and labels
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.4, wspace=0.1)
-        filename = f"{plot_title.replace(' ', '_')}.png"
-        plot_path = os.path.join(output_folder,filename)
-        plt.savefig(plot_path)
+        # Finding a unique filename by incrementing a number suffix if needed
+        sequence_number = 1
+        while True:
+            if sequence_number == 1:
+                filename = f"{base_file_name}.png"
+            else:
+                filename = f"{base_file_name}_{sequence_number}.png"
+            plot_path = os.path.join(output_folder, filename)
+        
+            # Break the loop if the filename does not exist yet
+            if not os.path.exists(plot_path):
+                break
+            sequence_number += 1
     
-        # Display the plots
+        plt.savefig(plot_path)
         plt.show()
 
     def plot_time_difference_vs_AT3(self, df, ax):
@@ -577,11 +594,24 @@ class Application(tk.Tk):
             # It's okay if the file doesn't exist; it means the program has never been run before.
             pass
 
-    
-    
-    @staticmethod
-    def calculate_airflow(fan_speed, coefficient=0.8, intercept=165):
+    def calculate_airflow(self, fan_speed, prototype, fan_type):
+        if prototype in self.prototypes and fan_type in self.prototypes[prototype]:
+            coefficient, intercept = self.prototypes[prototype][fan_type]
+        else:
+            raise ValueError(f"Prototype {prototype} or fan type {fan_type} not found.")
         return fan_speed * coefficient + intercept
+    
+    def show_pid_image(self, prototype_name):
+        image_path = f"PID/{prototype_name.replace(' ', '_')}.png"
+        try:
+            img = Image.open(image_path)
+            imgtk = ImageTk.PhotoImage(image=img)
+            pid_window = Toplevel(self)
+            pid_window.title(f"P&ID for {prototype_name}")
+            Label(pid_window, image=imgtk).pack()
+            pid_window.imgtk = imgtk  # Keep a reference to avoid garbage collection
+        except FileNotFoundError:
+            print(f"Image file not found: {image_path}")
 
 if __name__ == "__main__":
     psychrolib.SetUnitSystem(psychrolib.SI)
