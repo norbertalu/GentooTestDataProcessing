@@ -16,16 +16,29 @@ def generate_gcode(feedrate, initial_x, hold_up, hold_down, loops, output_path, 
     except ValueError:
         messagebox.showerror("Input Error", "Please ensure all inputs are numeric.")
         return
+    
+    shake_feedrate = feedrate*10
+    shake_distance = 5
+    shake_up = 146+shake_distance
+    shake_down = 146-shake_distance*2
 
-    gcode.append(f"G1 X{initial_x} F{feedrate}")  # Initial positioning on the X-axis
+    
 
     for i in range(loops):
         #gcode.append(f"G1 X{(initial_x + 1)} F{feedrate}")
         #gcode.append(f"G4 P{hold_up}")
-        gcode.append(f"G1 X0 F{feedrate}")
+        gcode.append(f"G1 X{initial_x} F{feedrate}")  # Initial positioning on the X-axis
         gcode.append(f"G4 P{hold_down}")
-        gcode.append(f"G1 X{initial_x} F{feedrate}")
+        gcode.append(f"G1 X146 F{feedrate}")
         gcode.append(f"G4 P{hold_up}")
+        #gcode.append(f"G1 X{initial_x} F{feedrate}")
+        #gcode.append(f"G4 P{hold_up}")
+
+        for _ in range(50):
+            gcode.append(f"G1 X{shake_up} F{feedrate}")
+            gcode.append(f"G1 X{shake_down} F{shake_feedrate}")
+            gcode.append(f"G1 Y15 F{shake_feedrate}")
+            gcode.append(f"G1 Y0 F{shake_feedrate}")
         
 
     # Handle the filename and path
@@ -59,6 +72,15 @@ def on_start_clicked():
     output_path = output_path_var.get()
     filename = filename_entry.get().strip()
 
+    try:
+        initial_x_val = float(initial_x)
+        if initial_x_val < 45:
+            messagebox.showerror("Input Error", "Initial Height must be at least 45.")
+            return
+    except ValueError:
+        messagebox.showerror("Input Error", "Please ensure all inputs are numeric.")
+        return
+
     generate_gcode(feedrate, initial_x, hold_up, hold_down, loops, output_path, filename)
 
 root = tk.Tk()
@@ -85,7 +107,7 @@ for i, (label, widget) in enumerate(widgets):
 
 feedrate_entry, initial_x_entry, hold_up_entry, hold_down_entry, loops_entry, _, filename_entry = (widget for _, widget in widgets)
 feedrate_entry.insert(0, "255")  # Insert the default feedrate value
-
+initial_x_entry.insert(0, "45")
 # Start button
 start_button = ttk.Button(root, text="Start", command=on_start_clicked)
 start_button.grid(row=len(widgets), column=0, columnspan=3, pady=(10, 0))

@@ -148,6 +148,14 @@ class Application(tk.Tk):
     
         saved_file_name = self.saved_file_name_entry.get().strip()
         # Ensure the file name ends with .xlsx
+        
+
+        if not output_folder or not os.path.isdir(output_folder):
+            messagebox.showwarning("Warning","Output folder is not specified or does not exist.")
+            return
+        elif not saved_file_name:
+            messagebox.showwarning("Warning", "Invalid or no file name provided.")
+        
         if not saved_file_name.endswith('.xlsx'):
             saved_file_name += '.xlsx'
         output_file_path = f"{output_folder}/{saved_file_name}"
