@@ -2,10 +2,15 @@ This GUI application is designed to facilitate the analysis and visualization of
 
 Features
 Data Input Handling: Users can select input datasheets, control log input files, and specify output folders through a user-friendly interface.
+
 Prototype Configuration: Supports multiple prototype configurations which can be easily selected and used for calculations.
+
 Performance Metrics Calculation: Calculates a variety of performance metrics including power, cooling capacity, EER, COP, and more.
+
 Data Visualization: Generates multiple plots based on selected data intervals, illustrating various performance aspects over time.
+
 Persistent Settings: Remembers the last used paths for datasheets, control logs, and output folders to streamline repeated use.
+
 Installation
 To run this application, you need Python installed on your system along with the following packages:
 
