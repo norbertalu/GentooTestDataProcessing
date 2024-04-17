@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 
 
 # Setting the unit system for psychrolib
+# Must set this before run code!
 psychrolib.SetUnitSystem(psychrolib.SI)
 
 class Application(tk.Tk):
@@ -48,7 +49,6 @@ class Application(tk.Tk):
         self.prototype_var = tk.StringVar()
         self.prototype_dropdown = ttk.Combobox(self, textvariable=self.prototype_var)
         self.prototype_dropdown.grid(row=3, column=1)
-        # Assuming self.prototypes is defined elsewhere
         self.prototype_dropdown['values'] = list(self.prototypes.keys())  
         self.prototype_dropdown.current(0)  # Default to first prototype
 
@@ -72,6 +72,7 @@ class Application(tk.Tk):
         self.plot_selection_listbox.grid(row=9, column=1, columnspan=2, sticky='ew')
     
         # Populate the Listbox with plot options
+        
         plot_options = ["Plot of Time Difference vs AT3", "Plot of Time vs Power", 
                     "Plot of Time vs Total Cooling", "Plot of Time vs EER", 
                     "Plot of Time vs Latent Capacity", "Plot of Time vs Sensible Capacity","Plot of Time vs COP"]
@@ -139,6 +140,7 @@ class Application(tk.Tk):
         selected_prototype = self.prototype_var.get()
         self.show_pid_image(selected_prototype)
 
+    #main function of this GUI that handles all the calculations
     def on_calculate_clicked(self):
         input_file = self.datasheet_entry.get()
         control_log_input_file = self.control_log_input_file_entry.get()
@@ -147,8 +149,6 @@ class Application(tk.Tk):
         current_prototype = self.prototype_var.get()
     
         saved_file_name = self.saved_file_name_entry.get().strip()
-        # Ensure the file name ends with .xlsx
-        
 
         if not output_folder or not os.path.isdir(output_folder):
             messagebox.showwarning("Warning","Output folder is not specified or does not exist.")
@@ -160,7 +160,6 @@ class Application(tk.Tk):
             saved_file_name += '.xlsx'
         output_file_path = f"{output_folder}/{saved_file_name}"
 
-    
         # Preparing and analyzing data
         df = self.prepare_dataframe(input_file,'%H:%M:%S', num_cols=38)
         new_df = self.prepare_dataframe(control_log_input_file,'%m/%d/%Y %I:%M:%S %p')
@@ -176,7 +175,7 @@ class Application(tk.Tk):
         # Ensure columns_to_merge is correctly populated
         columns_to_merge = list(rename_columns.values())
         new_df[columns_to_merge] = new_df[columns_to_merge].apply(pd.to_numeric, errors='coerce')
-        # Pass columns_to_merge as an argument
+
         df = self.merge_dataframes(df, new_df, TIME_THRESHOLD_SECONDS, columns_to_merge)
         df = df.iloc[1:, :] 
         # Creating a single dictionary that includes all new column names
@@ -387,12 +386,10 @@ class Application(tk.Tk):
         if not selected_plots:
             messagebox.showinfo("Info", "Please select at least one plot to generate.")
             return
-
-        # Calculate the number of rows needed for the selected plots (assuming 2 columns)
+        
         num_plots = len(selected_plots)
-        cols = 2  # Use 1 column if only one plot is selected
+        cols = 2  
         rows = math.ceil(num_plots / cols)
-
 
         # Create a figure for the plots
         fig, axs = plt.subplots(rows, cols, figsize=(20, 5 * rows),squeeze=False)
