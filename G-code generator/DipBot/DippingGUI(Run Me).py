@@ -17,29 +17,13 @@ def generate_gcode(feedrate, initial_x, hold_up, hold_down, loops, output_path, 
         messagebox.showerror("Input Error", "Please ensure all inputs are numeric.")
         return
     
-    shake_feedrate = feedrate*10
-    shake_distance = 5
-    shake_up = 146+shake_distance
-    shake_down = 146-shake_distance*2
-
-    
 
     for i in range(loops):
-        #gcode.append(f"G1 X{(initial_x + 1)} F{feedrate}")
-        #gcode.append(f"G4 P{hold_up}")
         gcode.append(f"G1 X{initial_x} F{feedrate}")  # Initial positioning on the X-axis
         gcode.append(f"G4 P{hold_down}")
         gcode.append(f"G1 X146 F{feedrate}")
         gcode.append(f"G4 P{hold_up}")
-        #gcode.append(f"G1 X{initial_x} F{feedrate}")
-        #gcode.append(f"G4 P{hold_up}")
 
-        for _ in range(50):
-            gcode.append(f"G1 X{shake_up} F{feedrate}")
-            gcode.append(f"G1 X{shake_down} F{shake_feedrate}")
-            gcode.append(f"G1 Y15 F{shake_feedrate}")
-            gcode.append(f"G1 Y0 F{shake_feedrate}")
-        
 
     # Handle the filename and path
     if not filename:
