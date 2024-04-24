@@ -599,7 +599,7 @@ class Application(tk.Tk):
         return fan_speed * coefficient + intercept
     
     def show_pid_image(self, prototype_name):
-        image_path = f"PID/{prototype_name.replace(' ', '_')}.png"
+        image_path = f"Performance Testing/PID/{prototype_name.replace(' ', '_')}.png"
         try:
             img = Image.open(image_path)
             imgtk = ImageTk.PhotoImage(image=img)
